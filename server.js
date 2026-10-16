@@ -335,8 +335,9 @@ const server = http.createServer(async (req, res) => {
       const chatRes = await askCampusCopilotWithGemini(String(question).trim(), cleanData);
       return sendJson(res, 200, {
         ok: true,
-        reply: chatRes.reply,
-        provider: chatRes.provider
+        reply: chatRes.answer || chatRes.reply,
+        highlightedSpaceId: chatRes.highlightedSpaceId || null,
+        provider: "GEMINI_2.5_FLASH_LIVE"
       });
     }
 
