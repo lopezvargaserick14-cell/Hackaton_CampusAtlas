@@ -195,7 +195,7 @@ const server = http.createServer(async (req, res) => {
           ? rawPayload.requesterRole
           : "TRAINER",
         activityTitle: sanitizeInputString(rawPayload.activityTitle, 140),
-        attendees: Number(rawPayload.attendees),
+        attendees: Math.max(1, Number(rawPayload.attendees) || 1),
         date: sanitizeInputString(rawPayload.date, 20),
         startTime: sanitizeInputString(rawPayload.startTime, 10),
         endTime: sanitizeInputString(rawPayload.endTime, 10),
@@ -425,41 +425,56 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // GET /api/export/csv
+    // GET /api/export/csv (Reporte oficial integral del Campus)
     if (req.method === "GET" && pathname === "/api/export/csv") {
       const { cleanData } = getSanitizedState();
       const escapeCsv = (val) => `"${String(val == null ? "" : val).replace(/"/g, '""')}"`;
       const rows = [
-        ["TABLA", "ID", "SALON", "RESPONSABLE", "ACTIVIDAD", "FECHA_HORARIO", "PERSONAS", "ESTADO", "RIESGO", "NOTA_SEGURIDAD"].map(escapeCsv).join(",")
+        ["SECCION", "ID", "SALON", "RESPONSABLE", "ACTIVIDAD", "FECHA", "HORA_INICIO", "HORA_FIN", "ESTADO", "DETALLE_SEGURIDAD"].map(escapeCsv).join(",")
       ];
 
       (cleanData.bookings || []).forEach((b) => {
         rows.push([
-          "RESERVAS_DB",
+          "RESERVAS",
           b.id,
           b.spaceName,
           `${b.requesterName} (${b.requesterRole || "TRAINER"})`,
           b.activityTitle,
-          `${b.date} ${b.startTime}-${b.endTime}`,
-          b.attendees,
+          b.date,
+          b.startTime,
+          b.endTime,
           b.status,
-          b.riskLevel || "BAJO",
           b.securityNote || "Verificado"
         ].map(escapeCsv).join(","));
       });
 
       (cleanData.spaces || []).forEach((s) => {
         rows.push([
-          "ESPACIOS_DB",
+          "INSTALACIONES",
           s.id,
           s.name,
-          s.zone,
+          "-",
           s.type,
-          "06:00-22:00",
-          s.capacity,
+          s.zone,
+          "06:00",
+          "22:00",
           s.status,
-          s.status !== "DISPONIBLE" ? "ALTO" : "BAJO",
-          s.lockReason || "Instalación habilitada"
+          s.lockReason || "Operativo"
+        ].map(escapeCsv).join(","));
+      });
+
+      (cleanData.incidents || []).forEach((inc) => {
+        rows.push([
+          "NOVEDADES_TECNICAS",
+          inc.id,
+          inc.targetId,
+          "-",
+          inc.title,
+          inc.createdAt ? inc.createdAt.slice(0, 10) : "-",
+          inc.severity,
+          inc.status,
+          inc.description,
+          inc.aiRecommendation || "Revisión técnica"
         ].map(escapeCsv).join(","));
       });
 
@@ -467,7 +482,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, {
         ...SECURITY_HEADERS,
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="CampusAtlas_BaseDatos_${new Date().toISOString().slice(0, 10)}.csv"`
+        "Content-Disposition": `attachment; filename="Campuslands_Reporte_${new Date().toISOString().slice(0, 10)}.csv"`
       });
       return res.end(csvContent);
     }

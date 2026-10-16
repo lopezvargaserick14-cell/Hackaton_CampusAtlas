@@ -42,7 +42,7 @@ function sanitizeCampusDataset(rawData) {
 
   const cleanSpaces = [];
   for (const s of Array.isArray(safeData.spaces) ? safeData.spaces : []) {
-    if (!s || !s.id || !s.name || typeof s.capacity !== "number" || s.capacity <= 0) continue;
+    if (!s || !s.id || !s.name) continue;
     if (!VALID_SPACE_STATUSES.includes(s.status)) continue;
     cleanSpaces.push(s);
   }
@@ -52,7 +52,6 @@ function sanitizeCampusDataset(rawData) {
     const startMin = timeToMinutes(b?.startTime);
     const endMin = timeToMinutes(b?.endTime);
     if (!b || !b.id || !b.spaceId || isNaN(startMin) || isNaN(endMin) || endMin <= startMin) continue;
-    if (typeof b.attendees !== "number" || b.attendees <= 0) continue;
     cleanBookings.push(b);
   }
 
@@ -69,17 +68,15 @@ function sanitizeCampusDataset(rawData) {
 }
 
 /**
- * Busca espacios alternativos libres cuando una reserva es rechazada por aforo o cruce.
+ * Busca espacios alternativos libres cuando una reserva es rechazada por cruce de horario.
  */
 function findAlternativeSpaces(payload, currentState) {
   const reqStart = timeToMinutes(payload.startTime);
   const reqEnd = timeToMinutes(payload.endTime);
-  const reqAttendees = Number(payload.attendees) || 1;
   const date = payload.date;
 
   return (currentState.spaces || []).filter((sp) => {
     if (sp.status !== "DISPONIBLE") return false;
-    if (sp.capacity * RULES_CONFIG.MAX_CAPACITY_OVERFLOW_RATIO < reqAttendees) return false;
 
     const hasOverlap = (currentState.bookings || []).some((bk) => {
       if (bk.status !== "ACTIVA" || bk.spaceId !== sp.id || bk.date !== date) return false;
@@ -169,22 +166,13 @@ function validateSpaceBookingRequest(payload, currentState) {
     );
   }
 
-  // REGLA R4: Límite de Aforo del Salón
-  const attendees = Number(payload.attendees);
-  const maxAllowed = Math.floor(space.capacity * RULES_CONFIG.MAX_CAPACITY_OVERFLOW_RATIO);
-  const validCapacity = Number.isFinite(attendees) && attendees >= 1 && attendees <= maxAllowed;
-
+  // REGLA R4: Aforo (Desactivado según instrucción del usuario)
   ruleChecks.push({
     ruleId: "R4-AFORO",
-    ruleName: `Capacidad Máxima (${maxAllowed} pax)`,
-    passed: validCapacity,
-    detail: validCapacity
-      ? `${attendees}/${maxAllowed} asistentes permitidos.`
-      : `Exceso de aforo: solicitas ${attendees} personas para un salón de máximo ${maxAllowed}.`
+    ruleName: "Aforo",
+    passed: true,
+    detail: "Gestión de espacio sin restricción de aforo."
   });
-  if (!validCapacity) {
-    errors.push(`Exceso de aforo en '${space.name}': máximo permitido ${maxAllowed} asistentes (solicitados: ${attendees}).`);
-  }
 
   // REGLA R5: Cero Solapamiento Horario
   const conflictingBooking = validRange

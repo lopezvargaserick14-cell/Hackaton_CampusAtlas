@@ -99,8 +99,8 @@
         <article class="kpi-card prio-green" onclick="handleKpiCardClick('VALIDA')" title="Filtrar salones disponibles">
           <span class="kpi-label">SALONES DISPONIBLES</span>
           <div class="kpi-value-row">
-            <strong id="kpiFreeSpaces">7</strong>
-            <small id="kpiTotalSpaces">/ 7 salones</small>
+            <strong id="kpiFreeSpaces">9</strong>
+            <small id="kpiTotalSpaces">/ 9 salones</small>
           </div>
           <span class="kpi-hint">✔ 100% operativos para reserva</span>
         </article>
@@ -159,7 +159,7 @@
                 </div>
               </div>
 
-              <!-- Cuadrícula de tarjetas de los 7 salones -->
+              <!-- Cuadrícula de tarjetas de los 9 salones -->
               <div id="spacesGrid" class="spaces-card-grid"></div>
             </div>
           </div>
@@ -170,56 +170,38 @@
               <div class="section-head compact">
                 <div>
                   <h2 class="section-title">Apartar / Reservar Salón</h2>
-                  <span class="section-subtitle">Reglas de aforo y seguridad verificadas</span>
+                  <span class="section-subtitle">Disponibilidad en tiempo real verificada</span>
                 </div>
-                <span id="selectedSpaceCapTag" class="tag-badge">Capacidad: 35 pax</span>
+                <span id="selectedSpaceStatusTag" class="tag-badge ok">Salón Operativo</span>
               </div>
 
               <form id="bookingForm" class="traditional-form" onsubmit="submitBooking(event)">
                 <div class="form-group">
                   <label for="bookingSpaceId">Lugar / Salón</label>
-                  <select id="bookingSpaceId" onchange="onSpaceOrAttendeesChange(true)" required>
-                    <option value="SP-APOLO">Nave Apolo (Capacidad: 35 personas)</option>
-                    <option value="SP-ARTEMIS">Nave Artemis (Capacidad: 30 personas)</option>
-                    <option value="SP-SPUTNIK">Nave Sputnik (Capacidad: 40 personas)</option>
-                    <option value="SP-SER-01">Sala del Ser &amp; Inglés (Capacidad: 20 personas)</option>
-                    <option value="SP-HUNTERS-01">Cabina Review #1 (Capacidad: 6 personas)</option>
-                    <option value="SP-CORVUS">Auditorio Corvus (Capacidad: 80 personas)</option>
-                    <option value="SP-HOUSTON">Sala Comando Houston (Capacidad: 14 personas)</option>
+                  <select id="bookingSpaceId" onchange="onSpaceChange(true)" required>
+                    <option value="SP-AUDITORIO">Auditorio</option>
+                    <option value="SP-COSMOS">Cosmos</option>
+                    <option value="SP-SKYLAB">Skylab</option>
+                    <option value="SP-SPUTNIK">Sputnik</option>
+                    <option value="SP-APOLLO">Apollo</option>
+                    <option value="SP-SALA-BLANCA">Sala Blanca</option>
+                    <option value="SP-SALA-AZUL">Sala Azul</option>
+                    <option value="SP-SALA-AMARILLA-VERDE">Sala Amarilla / Verde</option>
+                    <option value="SP-ARTEMIS">Artemis</option>
                   </select>
                 </div>
 
                 <!-- ALERTA EN VIVO: Si el salón tiene problema técnico o riesgo -->
                 <div id="liveSecurityWarning" class="alert-box alert-danger" style="display: none;"></div>
 
-                <div class="form-row-2">
-                  <div class="form-group">
-                    <label for="bookingAttendees">
-                      Asistentes <small id="attendeesMaxLabel" class="muted-label">(Máx: 35)</small>
-                    </label>
-                    <input
-                      type="number"
-                      id="bookingAttendees"
-                      min="1"
-                      max="150"
-                      value="25"
-                      oninput="onSpaceOrAttendeesChange(false)"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="bookingRole">Rol Autorizado</label>
-                    <select id="bookingRole" required>
-                      <option value="TRAINER">Trainer</option>
-                      <option value="TEAM_EDUCACION">Team Educación / Staff</option>
-                      <option value="COORDINACION">Coordinación Académica</option>
-                    </select>
-                  </div>
+                <div class="form-group">
+                  <label for="bookingRole">Rol Autorizado</label>
+                  <select id="bookingRole" required>
+                    <option value="TRAINER">Trainer</option>
+                    <option value="TEAM_EDUCACION">Team Educación / Staff</option>
+                    <option value="COORDINACION">Coordinación Académica</option>
+                  </select>
                 </div>
-
-                <!-- ALERTA EN VIVO: Si las personas superan la capacidad -->
-                <div id="liveCapacityWarning" class="alert-box alert-warning" style="display: none;"></div>
 
                 <div class="form-group">
                   <label for="bookingRequester">Responsable</label>
@@ -232,7 +214,6 @@
                     type="text"
                     id="bookingActivity"
                     placeholder="Ej: Módulo de Node.js &amp; Bases de Datos"
-                    oninput="onSpaceOrAttendeesChange(false)"
                     required
                   />
                 </div>
@@ -329,7 +310,7 @@
         <div class="db-analytics-grid">
           <div class="card-section">
             <div class="section-head compact">
-              <h2 class="section-title">Capacidad y Demanda por Salón</h2>
+              <h2 class="section-title">Ocupación y Reservas por Salón</h2>
               <span class="tag-mono">Sincronizado</span>
             </div>
             <div id="spaceAnalyticsBars" class="analytics-bars-wrap"></div>
@@ -376,9 +357,7 @@
                   <th>SALÓN</th>
                   <th>RESPONSABLE</th>
                   <th>ACTIVIDAD</th>
-                  <th>HORARIO</th>
-                  <th>PERSONAS</th>
-                  <th>RIESGO</th>
+                  <th>FECHA &amp; HORARIO</th>
                   <th>ESTADO</th>
                   <th>OBSERVACIÓN</th>
                   <th>ACCIÓN</th>
@@ -415,13 +394,15 @@
               <div class="form-group">
                 <label for="incidentTargetId">Salón Afectado</label>
                 <select id="incidentTargetId" required>
-                  <option value="SP-CORVUS">Auditorio Corvus</option>
-                  <option value="SP-HOUSTON">Sala Comando Houston</option>
-                  <option value="SP-APOLO">Nave Apolo</option>
-                  <option value="SP-ARTEMIS">Nave Artemis</option>
-                  <option value="SP-SPUTNIK">Nave Sputnik</option>
-                  <option value="SP-SER-01">Sala del Ser &amp; Inglés</option>
-                  <option value="SP-HUNTERS-01">Cabina Review #1</option>
+                  <option value="SP-AUDITORIO">Auditorio</option>
+                  <option value="SP-COSMOS">Cosmos</option>
+                  <option value="SP-SKYLAB">Skylab</option>
+                  <option value="SP-SPUTNIK">Sputnik</option>
+                  <option value="SP-APOLLO">Apollo</option>
+                  <option value="SP-SALA-BLANCA">Sala Blanca</option>
+                  <option value="SP-SALA-AZUL">Sala Azul</option>
+                  <option value="SP-SALA-AMARILLA-VERDE">Sala Amarilla / Verde</option>
+                  <option value="SP-ARTEMIS">Artemis</option>
                 </select>
               </div>
               <div class="form-group">
@@ -462,11 +443,11 @@
             <button type="button" class="chip-prompt" onclick="askQuickPrompt('¿Qué aulas están libres a las 3 de la tarde?')">
               ¿Aulas libres a las 3 PM?
             </button>
-            <button type="button" class="chip-prompt" onclick="askQuickPrompt('Recomiéndame un salón para 25 personas')">
-              Salón para 25 personas
+            <button type="button" class="chip-prompt" onclick="askQuickPrompt('¿Cuál es el estado del Auditorio hoy?')">
+              ¿Estado del Auditorio?
             </button>
-            <button type="button" class="chip-prompt" onclick="askQuickPrompt('¿Cuál es la capacidad de cada salón?')">
-              Capacidades oficiales
+            <button type="button" class="chip-prompt" onclick="askQuickPrompt('¿Qué salones están disponibles ahora?')">
+              Salones disponibles
             </button>
             <button type="button" class="chip-prompt" onclick="askQuickPrompt('¿Hay alguna novedad técnica o salón bloqueado?')">
               Novedades técnicas

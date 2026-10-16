@@ -2,76 +2,87 @@
   "metadata": {
     "campus": "Campuslands — Bucaramanga",
     "operatingHours": "06:00 - 22:00",
-    "lastUpdated": "2026-10-16T10:15:00-05:00"
+    "lastUpdated": "2026-10-16T11:15:00-05:00"
   },
   "spaces": [
     {
-      "id": "SP-APOLO",
-      "name": "Nave Apolo",
-      "type": "SALA_ENTRENAMIENTO",
-      "zone": "Nivel 1 • Norte",
-      "capacity": 35,
-      "color": "#EAB308",
-      "status": "DISPONIBLE",
-      "lockReason": null
-    },
-    {
-      "id": "SP-ARTEMIS",
-      "name": "Nave Artemis",
-      "type": "SALA_ENTRENAMIENTO",
-      "zone": "Nivel 1 • Centro",
-      "capacity": 30,
-      "color": "#38BDF8",
-      "status": "DISPONIBLE",
-      "lockReason": null
-    },
-    {
-      "id": "SP-SPUTNIK",
-      "name": "Nave Sputnik",
-      "type": "SALA_ENTRENAMIENTO",
-      "zone": "Nivel 1 • Sur",
-      "capacity": 40,
-      "color": "#10B981",
-      "status": "DISPONIBLE",
-      "lockReason": null
-    },
-    {
-      "id": "SP-SER-01",
-      "name": "Sala del Ser & Inglés",
-      "type": "ZONA_BIENESTAR",
-      "zone": "Nivel 2 • Este",
-      "capacity": 20,
-      "color": "#F43F5E",
-      "status": "DISPONIBLE",
-      "lockReason": null
-    },
-    {
-      "id": "SP-HUNTERS-01",
-      "name": "Cabina Review #1",
-      "type": "CABINA_REVIEW",
-      "zone": "Nivel 2 • Evaluaciones",
-      "capacity": 6,
-      "color": "#A855F7",
-      "status": "DISPONIBLE",
-      "lockReason": null
-    },
-    {
-      "id": "SP-CORVUS",
-      "name": "Auditorio Corvus",
+      "id": "SP-AUDITORIO",
+      "name": "Auditorio",
       "type": "AUDITORIO",
-      "zone": "Planta Central",
-      "capacity": 80,
+      "zone": "Planta Principal",
       "color": "#EF4444",
       "status": "DISPONIBLE",
       "lockReason": null
     },
     {
-      "id": "SP-HOUSTON",
-      "name": "Sala Comando Houston",
-      "type": "SALA_REUNIONES",
-      "zone": "Nivel 2 • Dirección",
-      "capacity": 14,
+      "id": "SP-COSMOS",
+      "name": "Cosmos",
+      "type": "SALA_ENTRENAMIENTO",
+      "zone": "Nivel 1 • Ala Este",
+      "color": "#8B5CF6",
+      "status": "DISPONIBLE",
+      "lockReason": null
+    },
+    {
+      "id": "SP-SKYLAB",
+      "name": "Skylab",
+      "type": "SALA_ENTRENAMIENTO",
+      "zone": "Nivel 1 • Ala Oeste",
+      "color": "#06B6D4",
+      "status": "DISPONIBLE",
+      "lockReason": null
+    },
+    {
+      "id": "SP-SPUTNIK",
+      "name": "Sputnik",
+      "type": "SALA_ENTRENAMIENTO",
+      "zone": "Nivel 1 • Sur",
+      "color": "#10B981",
+      "status": "DISPONIBLE",
+      "lockReason": null
+    },
+    {
+      "id": "SP-APOLLO",
+      "name": "Apollo",
+      "type": "SALA_ENTRENAMIENTO",
+      "zone": "Nivel 1 • Norte",
       "color": "#F59E0B",
+      "status": "DISPONIBLE",
+      "lockReason": null
+    },
+    {
+      "id": "SP-SALA-BLANCA",
+      "name": "Sala Blanca",
+      "type": "SALA_ESPECIALIZADA",
+      "zone": "Nivel 2 • Innovación",
+      "color": "#E2E8F0",
+      "status": "DISPONIBLE",
+      "lockReason": null
+    },
+    {
+      "id": "SP-SALA-AZUL",
+      "name": "Sala Azul",
+      "type": "SALA_ENTRENAMIENTO",
+      "zone": "Nivel 2 • Desarrollo",
+      "color": "#3B82F6",
+      "status": "DISPONIBLE",
+      "lockReason": null
+    },
+    {
+      "id": "SP-SALA-AMARILLA-VERDE",
+      "name": "Sala Amarilla / Verde",
+      "type": "ZONA_CREATIVA",
+      "zone": "Nivel 2 • Creatividad",
+      "color": "#84CC16",
+      "status": "DISPONIBLE",
+      "lockReason": null
+    },
+    {
+      "id": "SP-ARTEMIS",
+      "name": "Artemis",
+      "type": "SALA_ENTRENAMIENTO",
+      "zone": "Nivel 1 • Centro",
+      "color": "#EC4899",
       "status": "DISPONIBLE",
       "lockReason": null
     }

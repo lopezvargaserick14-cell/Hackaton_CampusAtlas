@@ -7,13 +7,15 @@ let appData = {
   rulesConfig: {},
   state: {
     spaces: [
-      { id: "SP-APOLO", name: "Nave Apolo", capacity: 35, status: "DISPONIBLE", zone: "Nivel 1 • Norte", color: "#EAB308", lockReason: null },
-      { id: "SP-ARTEMIS", name: "Nave Artemis", capacity: 30, status: "DISPONIBLE", zone: "Nivel 1 • Centro", color: "#38BDF8", lockReason: null },
-      { id: "SP-SPUTNIK", name: "Nave Sputnik", capacity: 40, status: "DISPONIBLE", zone: "Nivel 1 • Sur", color: "#10B981", lockReason: null },
-      { id: "SP-SER-01", name: "Sala del Ser & Inglés", capacity: 20, status: "DISPONIBLE", zone: "Nivel 2 • Este", color: "#F43F5E", lockReason: null },
-      { id: "SP-HUNTERS-01", name: "Cabina Review #1", capacity: 6, status: "DISPONIBLE", zone: "Nivel 2 • Evaluaciones", color: "#A855F7", lockReason: null },
-      { id: "SP-CORVUS", name: "Auditorio Corvus", capacity: 80, status: "DISPONIBLE", zone: "Planta Central", color: "#EF4444", lockReason: null },
-      { id: "SP-HOUSTON", name: "Sala Comando Houston", capacity: 14, status: "DISPONIBLE", zone: "Nivel 2 • Dirección", color: "#F59E0B", lockReason: null }
+      { id: "SP-AUDITORIO", name: "Auditorio", type: "AUDITORIO", zone: "Planta Principal", color: "#EF4444", status: "DISPONIBLE", lockReason: null },
+      { id: "SP-COSMOS", name: "Cosmos", type: "SALA_ENTRENAMIENTO", zone: "Nivel 1 • Ala Este", color: "#8B5CF6", status: "DISPONIBLE", lockReason: null },
+      { id: "SP-SKYLAB", name: "Skylab", type: "SALA_ENTRENAMIENTO", zone: "Nivel 1 • Ala Oeste", color: "#06B6D4", status: "DISPONIBLE", lockReason: null },
+      { id: "SP-SPUTNIK", name: "Sputnik", type: "SALA_ENTRENAMIENTO", zone: "Nivel 1 • Sur", color: "#10B981", status: "DISPONIBLE", lockReason: null },
+      { id: "SP-APOLLO", name: "Apollo", type: "SALA_ENTRENAMIENTO", zone: "Nivel 1 • Norte", color: "#F59E0B", status: "DISPONIBLE", lockReason: null },
+      { id: "SP-SALA-BLANCA", name: "Sala Blanca", type: "SALA_ESPECIALIZADA", zone: "Nivel 2 • Innovación", color: "#E2E8F0", status: "DISPONIBLE", lockReason: null },
+      { id: "SP-SALA-AZUL", name: "Sala Azul", type: "SALA_ENTRENAMIENTO", zone: "Nivel 2 • Desarrollo", color: "#3B82F6", status: "DISPONIBLE", lockReason: null },
+      { id: "SP-SALA-AMARILLA-VERDE", name: "Sala Amarilla / Verde", type: "ZONA_CREATIVA", zone: "Nivel 2 • Creatividad", color: "#84CC16", status: "DISPONIBLE", lockReason: null },
+      { id: "SP-ARTEMIS", name: "Artemis", type: "SALA_ENTRENAMIENTO", zone: "Nivel 1 • Centro", color: "#EC4899", status: "DISPONIBLE", lockReason: null }
     ],
     bookings: [],
     incidents: []
@@ -71,22 +73,22 @@ function getLocalBookings() {
     if (!Array.isArray(parsed)) return [];
 
     const spaces = appData?.state?.spaces || [
-      { id: "SP-APOLO", capacity: 35 },
-      { id: "SP-ARTEMIS", capacity: 30 },
-      { id: "SP-SPUTNIK", capacity: 40 },
-      { id: "SP-SER-01", capacity: 20 },
-      { id: "SP-HUNTERS-01", capacity: 6 },
-      { id: "SP-CORVUS", capacity: 80 },
-      { id: "SP-HOUSTON", capacity: 14 }
+      { id: "SP-AUDITORIO", name: "Auditorio" },
+      { id: "SP-COSMOS", name: "Cosmos" },
+      { id: "SP-SKYLAB", name: "Skylab" },
+      { id: "SP-SPUTNIK", name: "Sputnik" },
+      { id: "SP-APOLLO", name: "Apollo" },
+      { id: "SP-SALA-BLANCA", name: "Sala Blanca" },
+      { id: "SP-SALA-AZUL", name: "Sala Azul" },
+      { id: "SP-SALA-AMARILLA-VERDE", name: "Sala Amarilla / Verde" },
+      { id: "SP-ARTEMIS", name: "Artemis" }
     ];
     const spaceMap = new Map(spaces.map((s) => [s.id, s]));
 
     const validBookings = [];
     for (const b of parsed) {
       if (!b || !b.id || !b.spaceId || !b.date || !b.startTime || !b.endTime) continue;
-      const sp = spaceMap.get(b.spaceId);
-      // Validar aforo
-      if (sp && (Number(b.attendees) > sp.capacity || Number(b.attendees) < 1)) continue;
+
       // Validar orden de horas
       const bStart = toMin(b.startTime);
       const bEnd = toMin(b.endTime);
@@ -212,7 +214,7 @@ function renderAll() {
   renderKpis();
   renderSpacesGrid();
   renderWeeklyScheduleGrid();
-  onSpaceOrAttendeesChange(false);
+  onSpaceChange(false);
   renderDatabaseView();
   renderSecurityView();
 }
@@ -245,26 +247,16 @@ function renderKpis() {
   if (secBadge) secBadge.textContent = openIncidents;
 }
 
-// MANEJO UNIFICADO DE CLIC EN LAS 3 TARJETAS KPIS SUPERIORES
+// MANEJO UNIFICADO DE CLIC EN LAS 3 TARJETAS KPIS SUPERIORES (SIN TOAST AL CAMBIAR DE PANTALLA)
 function handleKpiCardClick(type) {
   if (type === "VALIDA") {
     switchView("view-spaces");
     setFilterMode("VALIDA");
-    showToast("🟢 Mostrando salones 100% disponibles para reservar", "info");
   } else if (type === "OCUPADO") {
     switchView("view-spaces");
     setFilterMode("OCUPADO");
-    const bookingsToday = (appData.state.bookings || []).filter(
-      (b) => b.status === "ACTIVA" && b.date === currentSelectedDate
-    );
-    if (bookingsToday.length === 0) {
-      showToast(`🔵 No hay salones ocupados en la fecha seleccionada (${currentSelectedDate}).`, "info");
-    } else {
-      showToast(`🔵 Filtrando ${bookingsToday.length} salón(es) en uso para ${currentSelectedDate}`, "info");
-    }
   } else if (type === "SECURITY") {
     switchView("view-security");
-    showToast("🔴 Panel de novedades técnicas e incidentes", "info");
   }
 }
 
@@ -296,7 +288,7 @@ function onDateInputChange(dateStr) {
   selectCalendarDate(dateStr);
 }
 
-// CUADRÍCULA DE LOS 7 SALONES
+// CUADRÍCULA DE LOS 9 SALONES (SIN RESTRICCIÓN DE AFORO)
 function renderSpacesGrid() {
   const grid = document.getElementById("spacesGrid");
   if (!grid) return;
@@ -320,7 +312,7 @@ function renderSpacesGrid() {
         <div style="grid-column: 1/-1; background: var(--bg-card-subtle); border: 1px dashed var(--border-subtle); border-radius: 10px; padding: 22px; text-align: center;">
           <span style="font-size: 2rem;">🎉</span>
           <p style="margin: 8px 0 4px; color: #FFFFFF; font-weight: 600; font-size: 0.92rem;">No hay salones ocupados el ${currentSelectedDate}</p>
-          <p style="color: var(--text-muted); font-size: 0.76rem; margin-bottom: 12px;">Todos los 7 salones e instalaciones están 100% libres para reservar en esta fecha.</p>
+          <p style="color: var(--text-muted); font-size: 0.76rem; margin-bottom: 12px;">Todos los 9 salones e instalaciones están 100% libres para reservar en esta fecha.</p>
           <button type="button" class="btn-top-action btn-purple-action" onclick="setFilterMode('ALL')">Ver Todos los Salones</button>
         </div>
       `;
@@ -355,9 +347,6 @@ function renderSpacesGrid() {
         barColor = "var(--campus-cyan)";
       }
 
-      const totalPax = roomBookings.reduce((sum, b) => sum + (b.attendees || 0), 0);
-      const pct = Math.min(100, Math.round((totalPax / s.capacity) * 100));
-
       return `
         <article
           class="space-card ${isSelected ? "active-selected" : ""}"
@@ -375,11 +364,10 @@ function renderSpacesGrid() {
 
           <div class="space-card-bar-wrap">
             <div class="space-card-bar-labels">
-              <span>Cap: <strong>${s.capacity} pax</strong></span>
-              <span>${isBusy ? `${totalPax}/${s.capacity}` : "Libre"}</span>
+              <span>${isBusy ? `📅 ${roomBookings.length} reserva(s) hoy` : "✔ Libre para apartar"}</span>
             </div>
             <div class="space-card-bar-track">
-              <div class="space-card-bar-fill" style="width: ${isBusy ? Math.max(16, pct) : 8}%; background: ${barColor};"></div>
+              <div class="space-card-bar-fill" style="width: ${isBusy ? 100 : 8}%; background: ${barColor};"></div>
             </div>
           </div>
         </article>
@@ -392,7 +380,7 @@ function selectSpaceFromCard(spaceId) {
   const sel = document.getElementById("bookingSpaceId");
   if (sel) {
     sel.value = spaceId;
-    onSpaceOrAttendeesChange(true);
+    onSpaceChange(true);
     renderSpacesGrid();
   }
 }
@@ -474,30 +462,30 @@ function clickScheduleSlot(dateStr, timeStr) {
     endInput.value = `${String(Math.min(22, hour + 2)).padStart(2, "0")}:00`;
   }
   document.getElementById("bookingActivity")?.focus();
-  showToast(`Horario seleccionado: ${dateStr} a las ${timeStr}`);
 }
 
-// CAPACIDAD DINÁMICA Y ALERTAS EN VIVO
-function onSpaceOrAttendeesChange(notifyProblem = false) {
+// ESTADO Y ALERTAS DEL SALÓN SELECCIONADO
+function onSpaceChange(notifyProblem = false) {
   const spaces = appData.state.spaces || [];
-  const spaceId = document.getElementById("bookingSpaceId")?.value || "SP-APOLO";
-  const attendeesInput = document.getElementById("bookingAttendees");
-  const attendees = Number(attendeesInput?.value || 0);
-
+  const spaceId = document.getElementById("bookingSpaceId")?.value || "SP-AUDITORIO";
   const space = spaces.find((s) => s.id === spaceId) || spaces[0];
   if (!space) return;
 
-  const maxAllowed = space.capacity || 35;
+  const statusTag = document.getElementById("selectedSpaceStatusTag");
+  const hasProblem = space.status !== "DISPONIBLE";
 
-  const capTag = document.getElementById("selectedSpaceCapTag");
-  const maxLabel = document.getElementById("attendeesMaxLabel");
-  if (capTag) capTag.textContent = `Capacidad: ${maxAllowed} pax`;
-  if (maxLabel) maxLabel.textContent = `(Máx: ${maxAllowed})`;
+  if (statusTag) {
+    if (hasProblem) {
+      statusTag.className = "tag-badge danger";
+      statusTag.textContent = "Alerta Técnica";
+    } else {
+      statusTag.className = "tag-badge ok";
+      statusTag.textContent = "Salón Operativo";
+    }
+  }
 
   // Alerta de problema en instalación
   const secWarnEl = document.getElementById("liveSecurityWarning");
-  const hasProblem = space.status !== "DISPONIBLE";
-
   if (secWarnEl) {
     if (hasProblem) {
       const reason = space.lockReason || "Instalación en mantenimiento preventivo";
@@ -511,39 +499,6 @@ function onSpaceOrAttendeesChange(notifyProblem = false) {
       }
     } else {
       secWarnEl.style.display = "none";
-    }
-  }
-
-  // Alerta de exceso de personas
-  const capWarnEl = document.getElementById("liveCapacityWarning");
-  if (capWarnEl) {
-    if (attendees > maxAllowed) {
-      const excess = attendees - maxAllowed;
-      const alternatives = spaces.filter((s) => s.status === "DISPONIBLE" && s.capacity >= attendees);
-
-      const altBtns =
-        alternatives.length > 0
-          ? `<div style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap;">
-              <span>Salones con suficiente cupo:</span>
-              ${alternatives
-                .map(
-                  (a) =>
-                    `<button type="button" class="btn-top-action" style="padding: 2px 8px; font-size: 0.72rem;" onclick="selectSpaceFromCard('${a.id}')">
-                      Cambiar a ${escapeHtml(a.name)} (Cap: ${a.capacity})
-                    </button>`
-                )
-                .join("")}
-            </div>`
-          : `<div style="margin-top: 4px;">Reduce el número de asistentes a máximo ${maxAllowed} personas.</div>`;
-
-      capWarnEl.style.display = "block";
-      capWarnEl.innerHTML = `
-        <strong>⚠️ Exceso de Capacidad en ${escapeHtml(space.name)}:</strong><br/>
-        Ingresaste <strong>${attendees} personas</strong>, pero el cupo máximo es de <strong>${maxAllowed}</strong> (te pasas por ${excess}).
-        ${altBtns}
-      `;
-    } else {
-      capWarnEl.style.display = "none";
     }
   }
 }
@@ -563,7 +518,7 @@ async function submitBooking(e) {
 
   const payload = {
     spaceId: document.getElementById("bookingSpaceId").value,
-    attendees: Number(document.getElementById("bookingAttendees").value),
+    attendees: 1,
     requesterName: (document.getElementById("bookingRequester").value || "").trim(),
     requesterRole: document.getElementById("bookingRole").value,
     activityTitle: (document.getElementById("bookingActivity").value || "").trim(),
@@ -599,26 +554,9 @@ async function submitBooking(e) {
     return;
   }
 
-  // 3. Validar aforo estricto (no se puede sobrepasar el cupo del salón)
-  if (!payload.attendees || isNaN(payload.attendees) || payload.attendees < 1) {
-    showToast("Ingresa una cantidad válida de asistentes (mínimo 1).", "error");
-    showBanner("La cantidad de asistentes debe ser de al menos 1 persona.", "error");
-    return;
-  }
-
-  if (payload.attendees > space.capacity) {
-    const excess = payload.attendees - space.capacity;
-    const msg = `Exceso de aforo: '${space.name}' solo admite un máximo de ${space.capacity} personas (ingresaste ${payload.attendees}, sobrepasas el cupo por ${excess}).`;
-    showToast(msg, "error");
-    showBanner(msg, "error");
-    if (auditBox) {
-      auditBox.style.display = "block";
-      auditBox.style.borderColor = "var(--campus-red)";
-      auditBox.innerHTML = `
-        <strong style="color: #FF4757;">🚫 Exceso de Capacidad Máxima</strong>
-        <p style="margin-top: 4px; color: var(--text-muted);">${escapeHtml(msg)}</p>
-      `;
-    }
+  // 3. Validar campos requeridos
+  if (!payload.requesterName || !payload.activityTitle) {
+    showToast("Completa el nombre del responsable y la actividad.", "error");
     return;
   }
 
@@ -739,13 +677,14 @@ function renderDatabaseView() {
     barsEl.innerHTML = spaces
       .map((s) => {
         const roomBookings = bookings.filter((b) => b.spaceId === s.id && b.status === "ACTIVA");
-        const totalPax = roomBookings.reduce((sum, b) => sum + (b.attendees || 0), 0);
-        const pct = Math.min(100, Math.round((totalPax / s.capacity) * 100));
+        const count = roomBookings.length;
+        const isOk = s.status === "DISPONIBLE";
+        const pct = count > 0 ? Math.min(100, count * 25) : 0;
         return `
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <div style="display: flex; justify-content: space-between; font-size: 0.74rem;">
-              <span><strong>${escapeHtml(s.name)}</strong> (Cupo: ${s.capacity})</span>
-              <span>${roomBookings.length} reserva(s) • ${totalPax}/${s.capacity} pax</span>
+              <span><strong>${escapeHtml(s.name)}</strong> (${escapeHtml(s.zone || "Campus")})</span>
+              <span>${count} reserva(s) • <strong style="color: ${isOk ? "var(--campus-mint)" : "var(--campus-red)"};">${escapeHtml(s.status)}</strong></span>
             </div>
             <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden;">
               <div style="height: 100%; width: ${Math.max(6, pct)}%; background: ${s.color || "var(--campus-purple)"}; border-radius: 99px;"></div>
@@ -786,7 +725,7 @@ function renderDatabaseView() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-dim); padding: 18px;">No hay registros en la base de datos aún. Realiza una reserva para verla aquí en tiempo real.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-dim); padding: 18px;">No hay registros en la base de datos aún. Realiza una reserva para verla aquí en tiempo real.</td></tr>`;
     return;
   }
 
@@ -800,8 +739,6 @@ function renderDatabaseView() {
           <td>${escapeHtml(b.requesterName)} <small style="color: var(--text-dim);">(${escapeHtml(b.requesterRole || "TRAINER")})</small></td>
           <td>${escapeHtml(b.activityTitle)}</td>
           <td style="font-family: var(--font-mono); font-size: 0.72rem;">${escapeHtml(b.date)}<br/>${escapeHtml(b.startTime)}–${escapeHtml(b.endTime)}</td>
-          <td>${b.attendees} pax</td>
-          <td><span class="status-pill ${b.riskLevel === "CRITICO" ? "high" : "low"}">${escapeHtml(b.riskLevel || "BAJO")}</span></td>
           <td><span class="status-pill ${isAct ? "low" : "high"}">${escapeHtml(b.status)}</span></td>
           <td style="font-size: 0.72rem; color: var(--text-muted); max-width: 200px;">${escapeHtml(b.securityNote || "Verificado")}</td>
           <td>
@@ -886,42 +823,61 @@ function renderSecurityView() {
 }
 
 async function submitIncident(e) {
-  e.preventDefault();
-  const payload = {
-    targetId: document.getElementById("incidentTargetId").value,
-    title: document.getElementById("incidentTitle").value,
-    description: document.getElementById("incidentDesc").value
-  };
+  if (e && e.preventDefault) e.preventDefault();
+  const targetId = document.getElementById("incidentTargetId")?.value;
+  const title = (document.getElementById("incidentTitle")?.value || "").trim();
+  const description = (document.getElementById("incidentDesc")?.value || "").trim();
 
-  setLoader(true, "Registrando alerta técnica...");
+  if (!targetId || !title || !description) {
+    showToast("Completa el salón, título y descripción del reporte.", "error");
+    return;
+  }
+
+  setLoader(true, "Registrando novedad técnica en el salón...");
   try {
     const res = await fetch("/api/incidents", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ targetId, title, description })
     });
     const data = await res.json();
-    if (data.ok) {
-      showToast(data.message, "error");
+    if (res.ok && data.ok) {
+      showToast(data.message || "Novedad técnica registrada con éxito en el salón.", "success");
       document.getElementById("incidentTitle").value = "";
       document.getElementById("incidentDesc").value = "";
       await loadState();
+      switchView("view-security");
+    } else {
+      showToast(data.message || "No se pudo registrar la novedad técnica.", "error");
     }
+  } catch (err) {
+    console.error("Error al registrar novedad:", err);
+    showToast("Error de conexión al registrar la novedad técnica.", "error");
   } finally {
     setLoader(false);
   }
 }
 
 async function resolveIncident(incidentId) {
-  const res = await fetch("/api/incidents/resolve", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ incidentId })
-  });
-  const data = await res.json();
-  if (data.ok) {
-    showToast(data.message, "success");
-    await loadState();
+  setLoader(true, "Resolviendo problema y habilitando salón...");
+  try {
+    const res = await fetch("/api/incidents/resolve", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ incidentId })
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      showToast(data.message || "Problema resuelto y salón habilitado.", "success");
+      await loadState();
+    } else {
+      showToast(data.message || "No se pudo resolver la incidencia.", "error");
+    }
+  } catch (err) {
+    console.error("Error al resolver incidencia:", err);
+    showToast("Error de conexión al resolver la incidencia.", "error");
+  } finally {
+    setLoader(false);
   }
 }
 
@@ -952,7 +908,7 @@ function localClientAssistantSolver(question) {
   // Saludo
   if (/^(hola|buen|buenas|hey|saludos|ayuda)/i.test(q)) {
     const free = spaces.filter((s) => s.status === "DISPONIBLE").length;
-    return `¡Hola! Soy el Asistente Oficial con IA de Campuslands.\nActualmente hay ${free} salones disponibles para reserva. Pregúntame qué aulas están libres a cualquier hora (ej: '¿qué aulas están libres a las 3?'), recomendaciones según cantidad de asistentes o capacidades.`;
+    return `¡Hola! Soy el Asistente Oficial con IA de Campuslands.\nActualmente hay ${free} salones disponibles para reserva. Pregúntame qué salones están libres a cualquier hora (ej: '¿qué aulas están libres a las 3?'), el estado de un salón en específico o fallas técnicas reportadas.`;
   }
 
   // Horas
@@ -993,7 +949,7 @@ function localClientAssistantSolver(question) {
       if (conflict) {
         busy.push(`${s.name} (${conflict.startTime}–${conflict.endTime} por ${conflict.activityTitle})`);
       } else {
-        free.push(`${s.name} (Capacidad: ${s.capacity} pax)`);
+        free.push(`${s.name}`);
       }
     });
 
@@ -1004,49 +960,44 @@ function localClientAssistantSolver(question) {
     return ans.trim();
   }
 
-  // Cupo / Asistentes
-  const mPax = q.match(/(?:para|de|caben|con|entran|meto)\s*(\d{1,3})\s*(?:personas?|campers?|pax)?/);
-  if (mPax) {
-    const pax = parseInt(mPax[1], 10);
-    const matching = spaces
-      .filter((s) => s.status === "DISPONIBLE" && s.capacity >= pax)
-      .sort((a, b) => a.capacity - b.capacity);
-    if (matching.length > 0) {
-      return `Para un grupo de ${pax} personas te recomiendo:\n` + matching.map((s) => `• ${s.name} (Capacidad: ${s.capacity} personas)`).join("\n");
-    }
-    return `No hay salones habilitados con capacidad para ${pax} personas actualmente.`;
-  }
+  // Específico (9 salones oficiales)
+  const roomKeys = [
+    { key: "auditorio", id: "SP-AUDITORIO" },
+    { key: "cosmos", id: "SP-COSMOS" },
+    { key: "skylab", id: "SP-SKYLAB" },
+    { key: "sputnik", id: "SP-SPUTNIK" },
+    { key: "apollo", id: "SP-APOLLO" },
+    { key: "apolo", id: "SP-APOLLO" },
+    { key: "blanca", id: "SP-SALA-BLANCA" },
+    { key: "azul", id: "SP-SALA-AZUL" },
+    { key: "amarill", id: "SP-SALA-AMARILLA-VERDE" },
+    { key: "verde", id: "SP-SALA-AMARILLA-VERDE" },
+    { key: "artemis", id: "SP-ARTEMIS" }
+  ];
 
-  // Específico
-  const rooms = ["apolo", "artemis", "sputnik", "corvus", "houston", "ser", "hunters", "review"];
-  for (const r of rooms) {
-    if (q.includes(r)) {
-      const sp = spaces.find((s) => s.name.toLowerCase().includes(r) || s.id.toLowerCase().includes(r));
+  for (const item of roomKeys) {
+    if (q.includes(item.key)) {
+      const sp = spaces.find((s) => s.id === item.id || s.name.toLowerCase().includes(item.key));
       if (sp) {
         if (sp.status !== "DISPONIBLE") return `⚠️ ${sp.name} no está disponible: ${sp.lockReason || sp.status}.`;
         const bks = bookings.filter((b) => b.spaceId === sp.id && b.date === currentSelectedDate);
         if (bks.length > 0) {
-          return `${sp.name} está habilitado (Cap: ${sp.capacity} pax), con reservas hoy: ` + bks.map((b) => `${b.startTime}–${b.endTime}`).join(", ");
+          return `${sp.name} está operativo, con reservas hoy: ` + bks.map((b) => `${b.startTime}–${b.endTime} (${b.activityTitle})`).join(", ");
         }
-        return `✅ ${sp.name} está 100% disponible hoy (Capacidad: ${sp.capacity} personas).`;
+        return `✅ ${sp.name} está 100% disponible hoy en ${sp.zone || "Campus"}.`;
       }
     }
   }
 
-  // Fallas
-  if (/(problema|falla|bloquead|seguridad|alerta|danad)/i.test(q)) {
+  // Fallas y alertas
+  if (/(problema|falla|bloquead|seguridad|alerta|danad|dañad)/i.test(q)) {
     const prob = spaces.filter((s) => s.status !== "DISPONIBLE");
-    if (prob.length === 0) return "Todas las instalaciones del campus están operativas y sin alertas de seguridad activas.";
-    return "Salones con alerta:\n" + prob.map((s) => `• ${s.name}: ${s.lockReason || s.status}`).join("\n");
+    if (prob.length === 0) return "Todas las instalaciones del campus están 100% operativas y sin alertas técnicas activas.";
+    return "Salones con alerta técnica:\n" + prob.map((s) => `• ${s.name}: ${s.lockReason || s.status}`).join("\n");
   }
 
-  // Capacidades
-  if (/(capacidad|aforo|caben)/i.test(q)) {
-    return "Capacidades oficiales de salones:\n" + spaces.map((s) => `• ${s.name}: máx. ${s.capacity} personas`).join("\n");
-  }
-
-  const freeSpaces = spaces.filter((s) => s.status === "DISPONIBLE").map((s) => `${s.name} (${s.capacity} pax)`);
-  return `Estado de salones en Campuslands:\n• Habilitados (${freeSpaces.length}): ${freeSpaces.join(", ")}.\n• Reservas activas: ${bookings.length}.`;
+  const freeSpaces = spaces.filter((s) => s.status === "DISPONIBLE").map((s) => s.name);
+  return `Estado de salones en Campuslands:\n• Habilitados (${freeSpaces.length} de ${spaces.length}): ${freeSpaces.join(", ")}.\n• Reservas activas: ${bookings.length}.`;
 }
 
 async function submitAssistantChat(e) {
@@ -1082,7 +1033,6 @@ async function submitAssistantChat(e) {
       }
     }
   } catch (err) {
-    // Si la conexión falla, el motor inteligente del cliente responde inmediatamente
     const el = document.getElementById(loadId);
     if (el) {
       el.innerHTML = formatAssistantReply(localClientAssistantSolver(q));
@@ -1093,8 +1043,112 @@ async function submitAssistantChat(e) {
   }
 }
 
-function exportReportCSV() {
-  window.location.href = "/api/export/csv";
+async function exportReportCSV() {
+  setLoader(true, "Generando reporte CSV...");
+  try {
+    const res = await fetch("/api/export/csv");
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = `Campuslands_Reporte_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      showToast("Reporte CSV descargado con éxito.", "success");
+      return;
+    }
+  } catch (err) {
+    console.warn("Fallo descarga de servidor, generando CSV en cliente:", err);
+  } finally {
+    setLoader(false);
+  }
+
+  // Fallback infalible en el cliente
+  try {
+    const spaces = appData.state.spaces || [];
+    const bookings = appData.state.bookings || [];
+    const incidents = appData.state.incidents || [];
+
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""';
+      const s = String(val).replace(/"/g, '""');
+      return `"${s}"`;
+    };
+
+    const rows = [
+      ["REPORTE OFICIAL DE ESPACIOS Y RESERVAS - CAMPUSLANDS"],
+      [`Generado: ${new Date().toLocaleString("es-CO")}`],
+      [],
+      ["--- SECCIÓN 1: RESERVAS REGISTRADAS ---"],
+      ["ID", "SALON_ID", "SALON_NOMBRE", "RESPONSABLE", "ROL", "ACTIVIDAD", "FECHA", "HORA_INICIO", "HORA_FIN", "ESTADO", "OBSERVACION_SEGURIDAD"]
+    ];
+
+    bookings.forEach((b) => {
+      rows.push([
+        b.id,
+        b.spaceId,
+        b.spaceName,
+        b.requesterName,
+        b.requesterRole,
+        b.activityTitle,
+        b.date,
+        b.startTime,
+        b.endTime,
+        b.status,
+        b.securityNote || "Verificado"
+      ].map(escapeCsv).join(","));
+    });
+
+    rows.push([]);
+    rows.push(["--- SECCIÓN 2: SALONES E INSTALACIONES (9 OFICIALES) ---"]);
+    rows.push(["ID", "NOMBRE", "TIPO", "ZONA", "ESTADO", "NOVEDAD_O_BLOQUEO"]);
+    spaces.forEach((s) => {
+      rows.push([
+        s.id,
+        s.name,
+        s.type,
+        s.zone,
+        s.status,
+        s.lockReason || "Operativo"
+      ].map(escapeCsv).join(","));
+    });
+
+    rows.push([]);
+    rows.push(["--- SECCIÓN 3: NOVEDADES Y FALLAS TÉCNICAS REPORTADAS ---"]);
+    rows.push(["ID", "SALON_AFECTADO", "TITULO", "FECHA_REPORTE", "SEVERIDAD", "ESTADO", "DESCRIPCION", "RECOMENDACION"]);
+    incidents.forEach((inc) => {
+      rows.push([
+        inc.id,
+        inc.targetId,
+        inc.title,
+        inc.createdAt ? inc.createdAt.slice(0, 10) : "-",
+        inc.severity,
+        inc.status,
+        inc.description,
+        inc.aiRecommendation || "Revisión técnica"
+      ].map(escapeCsv).join(","));
+    });
+
+    const csvContent = "\uFEFF" + rows.map((r) => Array.isArray(r) ? r.join(",") : r).join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.style.display = "none";
+    a.href = url;
+    a.download = `Campuslands_Reporte_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    a.remove();
+    showToast("Reporte CSV descargado con éxito.", "success");
+  } catch (err2) {
+    console.error("Error generando CSV:", err2);
+    showToast("No se pudo exportar el CSV.", "error");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", () => {

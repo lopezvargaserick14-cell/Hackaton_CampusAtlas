@@ -89,14 +89,17 @@ function smartNodeAssistant(question, currentState, targetDate = "2026-10-16") {
 
   // 3. Consulta de salón específico
   const roomAliases = {
-    apolo: "SP-APOLO",
-    artemis: "SP-ARTEMIS",
+    auditorio: "SP-AUDITORIO",
+    cosmos: "SP-COSMOS",
+    skylab: "SP-SKYLAB",
     sputnik: "SP-SPUTNIK",
-    corvus: "SP-CORVUS",
-    houston: "SP-HOUSTON",
-    ser: "SP-SER-01",
-    hunters: "SP-HUNTERS-01",
-    review: "SP-HUNTERS-01"
+    apollo: "SP-APOLLO",
+    apolo: "SP-APOLLO",
+    blanca: "SP-SALA-BLANCA",
+    azul: "SP-SALA-AZUL",
+    amarill: "SP-SALA-AMARILLA-VERDE",
+    verde: "SP-SALA-AMARILLA-VERDE",
+    artemis: "SP-ARTEMIS"
   };
   for (const [alias, sId] of Object.entries(roomAliases)) {
     if (q.includes(alias)) {
