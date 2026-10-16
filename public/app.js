@@ -1,48 +1,47 @@
 /* ==========================================================================
-   PORTAL ESPACIOS CAMPUSLANDS — CONTROLADOR FRONTEND COMPLETO
-   Calendario Semanal Siempre Visible • Motor Python • Alertas en Vivo
+   PORTAL ESPACIOS CAMPUSLANDS — CONTROLADOR FRONTEND ROBUSTO Y SEGURO
+   Calendario Semanal Integrado • Selector Confiable • Motor Python y Local
    ========================================================================== */
 
 let appData = {
   rulesConfig: {},
   state: {
-    spaces: [],
+    spaces: [
+      { id: "SP-APOLO", name: "Nave Apolo", capacity: 35, status: "DISPONIBLE", zone: "Nivel 1 • Norte", color: "#EAB308" },
+      { id: "SP-ARTEMIS", name: "Nave Artemis", capacity: 30, status: "DISPONIBLE", zone: "Nivel 1 • Centro", color: "#38BDF8" },
+      { id: "SP-SPUTNIK", name: "Nave Sputnik", capacity: 40, status: "DISPONIBLE", zone: "Nivel 1 • Sur", color: "#10B981" },
+      { id: "SP-SER-01", name: "Sala del Ser & Inglés", capacity: 20, status: "DISPONIBLE", zone: "Nivel 2 • Este", color: "#F43F5E" },
+      { id: "SP-HUNTERS-01", name: "Cabina Review #1", capacity: 6, status: "DISPONIBLE", zone: "Nivel 2 • Evaluaciones", color: "#A855F7" },
+      { id: "SP-CORVUS", name: "Auditorio Corvus", capacity: 80, status: "BLOQUEADO_SEGURIDAD", zone: "Planta Central", color: "#EF4444", lockReason: "Falla eléctrica en rack principal" },
+      { id: "SP-HOUSTON", name: "Sala Comando Houston", capacity: 14, status: "MANTENIMIENTO", zone: "Nivel 2 • Dirección", color: "#F59E0B", lockReason: "Reparación de ducto de aire y nodo de red" }
+    ],
     bookings: [],
     incidents: []
   }
 };
 
-let selectedDate = "2026-10-16";
-let spaceFilterMode = "ALL"; // ALL | VALIDA | OCUPADO
-let enabledSpaceIds = new Set();
+let currentSelectedDate = "2026-10-16";
+let currentFilterMode = "ALL"; // ALL | VALIDA | OCUPADO
 
 const WEEK_DAYS = [
-  { date: "2026-10-11", label: "DOM 11", dayNum: 11 },
-  { date: "2026-10-12", label: "LUN 12", dayNum: 12 },
-  { date: "2026-10-13", label: "MAR 13", dayNum: 13 },
-  { date: "2026-10-14", label: "MIÉ 14", dayNum: 14 },
-  { date: "2026-10-15", label: "JUE 15", dayNum: 15 },
-  { date: "2026-10-16", label: "VIE 16", dayNum: 16 },
-  { date: "2026-10-17", label: "SÁB 17", dayNum: 17 }
+  { date: "2026-10-11", label: "DOM 11" },
+  { date: "2026-10-12", label: "LUN 12" },
+  { date: "2026-10-13", label: "MAR 13" },
+  { date: "2026-10-14", label: "MIÉ 14" },
+  { date: "2026-10-15", label: "JUE 15" },
+  { date: "2026-10-16", label: "VIE 16" },
+  { date: "2026-10-17", label: "SÁB 17" }
 ];
 
-const HOURS_LIST = [
+const SCHEDULE_HOURS = [
   { hhmm: "06:00", label: "6:00 a. m." },
-  { hhmm: "07:00", label: "7:00 a. m." },
   { hhmm: "08:00", label: "8:00 a. m." },
-  { hhmm: "09:00", label: "9:00 a. m." },
   { hhmm: "10:00", label: "10:00 a. m." },
-  { hhmm: "11:00", label: "11:00 a. m." },
   { hhmm: "12:00", label: "12:00 p. m." },
-  { hhmm: "13:00", label: "1:00 p. m." },
   { hhmm: "14:00", label: "2:00 p. m." },
-  { hhmm: "15:00", label: "3:00 p. m." },
   { hhmm: "16:00", label: "4:00 p. m." },
-  { hhmm: "17:00", label: "5:00 p. m." },
   { hhmm: "18:00", label: "6:00 p. m." },
-  { hhmm: "19:00", label: "7:00 p. m." },
-  { hhmm: "20:00", label: "8:00 p. m." },
-  { hhmm: "21:00", label: "9:00 p. m." }
+  { hhmm: "20:00", label: "8:00 p. m." }
 ];
 
 function escapeHtml(val) {
@@ -58,6 +57,15 @@ function toMin(hhmm) {
   return h * 60 + (m || 0);
 }
 
+function startClock() {
+  const el = document.getElementById("liveClock");
+  const tick = () => {
+    if (el) el.textContent = new Date().toLocaleTimeString("es-CO", { hour12: false });
+  };
+  tick();
+  setInterval(tick, 1000);
+}
+
 function showToast(msg, type = "success") {
   const container = document.getElementById("toastContainer");
   if (!container) return;
@@ -65,17 +73,17 @@ function showToast(msg, type = "success") {
   el.className = `toast ${type}`;
   el.textContent = msg;
   container.appendChild(el);
-  setTimeout(() => el.remove(), 3800);
+  setTimeout(() => el.remove(), 4000);
 }
 
 function showBanner(msg, type = "success") {
   const banner = document.getElementById("feedbackBanner");
   if (!banner) return;
-  banner.className = `feedback-banner ${type}`;
+  banner.className = `feedback-bar ${type}`;
   banner.style.display = "flex";
   banner.innerHTML = `
     <span>${type === "error" ? "🚨" : "✅"} ${escapeHtml(msg)}</span>
-    <button type="button" class="btn-inline" onclick="this.parentElement.style.display='none'">Cerrar ✕</button>
+    <button type="button" class="btn-mini" onclick="this.parentElement.style.display='none'">✕</button>
   `;
 }
 
@@ -84,7 +92,7 @@ function setLoader(visible, text) {
   if (!loader) return;
   if (visible) {
     document.getElementById("loaderText").textContent =
-      text || "Procesando en el motor de seguridad Python...";
+      text || "Cargando... Verificando disponibilidad y condiciones de seguridad...";
     loader.style.display = "flex";
   } else {
     loader.style.display = "none";
@@ -92,10 +100,10 @@ function setLoader(visible, text) {
 }
 
 function switchView(viewId) {
-  document.querySelectorAll(".portal-main, .portal-secondary-view").forEach((el) => {
+  document.querySelectorAll(".view-pane").forEach((el) => {
     el.classList.toggle("active", el.id === viewId);
   });
-  document.querySelectorAll(".nav-tab").forEach((btn) => {
+  document.querySelectorAll(".nav-pill").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === viewId);
   });
 }
@@ -106,206 +114,178 @@ async function loadState() {
     const data = await res.json();
     if (data.ok) {
       appData = data;
-      if (enabledSpaceIds.size === 0) {
-        (appData.state.spaces || []).forEach((s) => enabledSpaceIds.add(s.id));
-      }
-      renderAll();
     }
   } catch (err) {
-    showToast("Error conectando con el servidor", "error");
+    console.warn("Usando datos locales sincronizados:", err);
+  } finally {
+    renderAll();
   }
 }
 
 function renderAll() {
-  updateTopBadges();
-  populateFormSelects();
-  renderMiniCalendar();
-  renderRoomCheckboxes();
-  renderSpacesStrip();
+  renderKpis();
+  renderSpacesGrid();
   renderWeeklyScheduleGrid();
   onSpaceOrAttendeesChange(false);
   renderDatabaseView();
   renderSecurityView();
 }
 
-function updateTopBadges() {
-  const bookings = appData.state.bookings || [];
-  const openIncidents = (appData.state.incidents || []).filter((i) => i.status === "ABIERTA").length;
-  document.getElementById("dbCountBadge").textContent = bookings.length;
-  document.getElementById("secCountBadge").textContent = openIncidents;
-}
-
-function populateFormSelects() {
+function renderKpis() {
   const spaces = appData.state.spaces || [];
-  const bookSel = document.getElementById("bookingSpaceId");
-  const incSel = document.getElementById("incidentTargetId");
+  const bookings = appData.state.bookings || [];
+  const incidents = appData.state.incidents || [];
 
-  const prevBook = bookSel.value;
-  bookSel.innerHTML = spaces
-    .map((s) => {
-      const st =
-        s.status === "DISPONIBLE"
-          ? `Capacidad: ${s.capacity} personas`
-          : `Capacidad: ${s.capacity} — ⚠️ Problema en instalación`;
-      return `<option value="${s.id}">${escapeHtml(s.name)} (${st})</option>`;
-    })
-    .join("");
-  if (prevBook && spaces.some((s) => s.id === prevBook)) {
-    bookSel.value = prevBook;
-  }
+  const freeSpaces = spaces.filter((s) => s.status === "DISPONIBLE").length;
+  const activeBookings = bookings.filter((b) => b.status === "ACTIVA");
+  const openIncidents = incidents.filter((i) => i.status === "ABIERTA").length;
+  const problemSpaces = spaces.filter((s) => s.status !== "DISPONIBLE").length;
 
-  const prevInc = incSel.value;
-  incSel.innerHTML = spaces
-    .map((s) => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.zone)})</option>`)
-    .join("");
-  if (prevInc && spaces.some((s) => s.id === prevInc)) {
-    incSel.value = prevInc;
-  }
+  const totalCap = spaces.reduce((acc, s) => acc + (s.capacity || 0), 0) || 1;
+  const occupiedPax = activeBookings.reduce((acc, b) => acc + (b.attendees || 0), 0);
+  const occPct = Math.min(100, Math.round((occupiedPax / totalCap) * 100));
+
+  const elFree = document.getElementById("kpiFreeSpaces");
+  if (elFree) elFree.textContent = freeSpaces;
+  const elTot = document.getElementById("kpiTotalSpaces");
+  if (elTot) elTot.textContent = `/ ${spaces.length} salones`;
+  const elAct = document.getElementById("kpiActiveBookings");
+  if (elAct) elAct.textContent = activeBookings.length;
+  const elSec = document.getElementById("kpiSecurityAlerts");
+  if (elSec) elSec.textContent = openIncidents + problemSpaces;
+  const elBlk = document.getElementById("kpiBlockedRooms");
+  if (elBlk) elBlk.textContent = `${problemSpaces} con novedad`;
+  const elOcc = document.getElementById("kpiOccupancyRate");
+  if (elOcc) elOcc.textContent = `${occPct}%`;
+  const elPax = document.getElementById("kpiTotalPax");
+  if (elPax) elPax.textContent = `${occupiedPax} personas`;
+
+  const dbBadge = document.getElementById("dbCountBadge");
+  if (dbBadge) dbBadge.textContent = bookings.length;
+  const secBadge = document.getElementById("secCountBadge");
+  if (secBadge) secBadge.textContent = openIncidents;
 }
 
 // ==========================================================================
-// MINI CALENDARIO MENSUAL Y CHECKBOXES PLEGABLES
+// FILTROS (TODOS, VÁLIDA / DISPONIBLES, OCUPADO)
 // ==========================================================================
-
-function renderMiniCalendar() {
-  const container = document.getElementById("miniCalendarDays");
-  if (!container) return;
-
-  // Octubre 2026 empieza en Jueves (día 1 = Jueves, así que DOM 27..MIÉ 30 son de sept)
-  const prevDays = [27, 28, 29, 30];
-  let html = prevDays.map((d) => `<button type="button" class="mini-day muted" disabled>${d}</button>`).join("");
-
-  for (let d = 1; d <= 31; d++) {
-    const dateStr = `2026-10-${String(d).padStart(2, "0")}`;
-    const isInWeek = d >= 11 && d <= 17;
-    const isSelected = dateStr === selectedDate;
-    const cls = ["mini-day", isInWeek ? "in-week" : "", isSelected ? "selected" : ""]
-      .filter(Boolean)
-      .join(" ");
-    html += `<button type="button" class="${cls}" onclick="selectDate('${dateStr}')">${d}</button>`;
-  }
-
-  container.innerHTML = html;
-}
-
-function selectDate(dateStr) {
-  if (!dateStr) return;
-  selectedDate = dateStr;
-  const dateInput = document.getElementById("bookingDate");
-  if (dateInput && dateInput.value !== dateStr) {
-    dateInput.value = dateStr;
-  }
-  renderMiniCalendar();
-  renderSpacesStrip();
-  renderWeeklyScheduleGrid();
-}
-
-function stepSelectedDate(deltaDays) {
-  const current = new Date(selectedDate + "T12:00:00");
-  current.setDate(current.getDate() + deltaDays);
-  const yyyy = current.getFullYear();
-  const mm = String(current.getMonth() + 1).padStart(2, "0");
-  const dd = String(current.getDate()).padStart(2, "0");
-  selectDate(`${yyyy}-${mm}-${dd}`);
-}
 
 function setFilterMode(mode) {
-  spaceFilterMode = mode;
-  document.querySelectorAll('input[name="spaceStateFilter"]').forEach((r) => {
-    r.checked = r.value === mode;
+  currentFilterMode = mode;
+  document.getElementById("btnModeAll")?.classList.toggle("active", mode === "ALL");
+  document.getElementById("btnModeValida")?.classList.toggle("active", mode === "VALIDA");
+  document.getElementById("btnModeOcupado")?.classList.toggle("active", mode === "OCUPADO");
+
+  renderSpacesGrid();
+  renderWeeklyScheduleGrid();
+}
+
+function selectCalendarDate(dateStr) {
+  currentSelectedDate = dateStr;
+  const dateInput = document.getElementById("bookingDate");
+  if (dateInput) dateInput.value = dateStr;
+
+  document.querySelectorAll(".day-tab").forEach((btn) => {
+    btn.classList.toggle("active", btn.getAttribute("onclick")?.includes(dateStr));
   });
-  renderSpacesStrip();
+
+  renderSpacesGrid();
   renderWeeklyScheduleGrid();
 }
 
-function renderRoomCheckboxes() {
-  const container = document.getElementById("roomCheckboxesList");
-  if (!container) return;
-
-  const spaces = appData.state.spaces || [];
-  container.innerHTML = spaces
-    .map((s) => {
-      const checked = enabledSpaceIds.has(s.id) ? "checked" : "";
-      const warn = s.status !== "DISPONIBLE" ? " ⚠️" : "";
-      return `
-        <label class="room-check-item">
-          <input type="checkbox" ${checked} onchange="toggleRoomCheckbox('${s.id}', this.checked)" />
-          <span class="room-color-dot" style="background:${s.color || "#38BDF8"};"></span>
-          <span>${escapeHtml(s.name)} <small style="color:var(--text-muted);">(${s.capacity})${warn}</small></span>
-        </label>
-      `;
-    })
-    .join("");
-}
-
-function toggleRoomCheckbox(spaceId, isChecked) {
-  if (isChecked) {
-    enabledSpaceIds.add(spaceId);
-  } else {
-    enabledSpaceIds.delete(spaceId);
-  }
-  renderSpacesStrip();
-  renderWeeklyScheduleGrid();
+function onDateInputChange(dateStr) {
+  currentSelectedDate = dateStr;
+  selectCalendarDate(dateStr);
 }
 
 // ==========================================================================
-// TIRA DE SALONES Y CALENDARIO SEMANAL SIEMPRE VISIBLE
+// CUADRÍCULA DE SALONES
 // ==========================================================================
 
-function renderSpacesStrip() {
-  const strip = document.getElementById("spacesStrip");
-  if (!strip) return;
+function renderSpacesGrid() {
+  const grid = document.getElementById("spacesGrid");
+  if (!grid) return;
 
   const spaces = appData.state.spaces || [];
-  const activeBookingsToday = (appData.state.bookings || []).filter(
-    (b) => b.status === "ACTIVA" && b.date === selectedDate
+  const bookingsToday = (appData.state.bookings || []).filter(
+    (b) => b.status === "ACTIVA" && b.date === currentSelectedDate
   );
-  const currentSelectedSpaceId = document.getElementById("bookingSpaceId")?.value;
+  const selectedSpaceId = document.getElementById("bookingSpaceId")?.value;
 
-  const visibleSpaces = spaces.filter((s) => {
-    if (!enabledSpaceIds.has(s.id)) return false;
-    const isBusyToday = activeBookingsToday.some((b) => b.spaceId === s.id);
-    if (spaceFilterMode === "VALIDA" && s.status !== "DISPONIBLE") return false;
-    if (spaceFilterMode === "OCUPADO" && !isBusyToday) return false;
+  const filtered = spaces.filter((s) => {
+    const isBusyToday = bookingsToday.some((b) => b.spaceId === s.id);
+    if (currentFilterMode === "VALIDA" && s.status !== "DISPONIBLE") return false;
+    if (currentFilterMode === "OCUPADO" && !isBusyToday) return false;
     return true;
   });
 
-  if (visibleSpaces.length === 0) {
-    strip.innerHTML = `<div style="color:var(--text-muted); font-size:0.78rem; padding:4px;">No hay salones activos con el filtro seleccionado.</div>`;
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-secondary); font-size: 0.8rem; padding: 10px;">No hay salones en este estado para la fecha seleccionada.</div>`;
     return;
   }
 
-  strip.innerHTML = visibleSpaces
+  grid.innerHTML = filtered
     .map((s) => {
-      const roomBookings = activeBookingsToday.filter((b) => b.spaceId === s.id);
+      const roomBookings = bookingsToday.filter((b) => b.spaceId === s.id);
+      const isSelected = s.id === selectedSpaceId;
+      const isBusy = roomBookings.length > 0;
       const hasProblem = s.status !== "DISPONIBLE";
-      const isSelected = s.id === currentSelectedSpaceId;
 
-      let statusLabel = "🟢 Disponible";
+      let statusBadge = `<span class="status-badge low">🟢 DISPONIBLE</span>`;
+      let barColor = "var(--prio-low)";
       if (hasProblem) {
-        statusLabel = "🔴 Problema Instalación";
-      } else if (roomBookings.length > 0) {
-        statusLabel = `🔵 ${roomBookings[0].bookingTag || "Ocupado"} (${roomBookings[0].startTime})`;
+        statusBadge = `<span class="status-badge high">🔴 PROBLEMA</span>`;
+        barColor = "var(--prio-high)";
+      } else if (isBusy) {
+        statusBadge = `<span class="status-badge info">🔵 EN USO</span>`;
+        barColor = "var(--campus-cyan)";
       }
+
+      const totalPax = roomBookings.reduce((sum, b) => sum + (b.attendees || 0), 0);
+      const pct = Math.min(100, Math.round((totalPax / s.capacity) * 100));
 
       return `
         <article
-          class="strip-room-card ${hasProblem ? "problem" : ""} ${isSelected ? "active-selected" : ""}"
-          style="border-left-color:${hasProblem ? "var(--accent-red)" : s.color || "var(--accent-green)"};"
-          onclick="selectSpaceInForm('${s.id}')"
+          class="space-card status-${s.status} ${isSelected ? "active-selected" : ""}"
+          onclick="selectSpaceFromCard('${s.id}')"
         >
-          <div class="strip-room-top">
-            <span>${escapeHtml(s.name)}</span>
-            <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--accent-cyan);">Cap: ${s.capacity}</span>
+          <div class="space-card-top">
+            <span class="code-pill">${escapeHtml(s.id)}</span>
+            ${statusBadge}
           </div>
-          <div class="strip-room-sub">
-            <span>${statusLabel}</span>
+
+          <div>
+            <h3 class="space-name">${escapeHtml(s.name)}</h3>
+            <span class="space-meta">${escapeHtml(s.zone)}</span>
+          </div>
+
+          <div class="bar-wrap">
+            <div class="bar-labels">
+              <span>Capacidad: <strong>${s.capacity} personas</strong></span>
+              <span>${isBusy ? `${totalPax}/${s.capacity} pax` : "Libre"}</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: ${isBusy ? Math.max(15, pct) : 8}%; background: ${barColor};"></div>
+            </div>
           </div>
         </article>
       `;
     })
     .join("");
 }
+
+function selectSpaceFromCard(spaceId) {
+  const sel = document.getElementById("bookingSpaceId");
+  if (sel) {
+    sel.value = spaceId;
+    onSpaceOrAttendeesChange(true);
+    renderSpacesGrid();
+  }
+}
+
+// ==========================================================================
+// CALENDARIO SEMANAL INTEGRADO (RECUADRO ANTES VACÍO)
+// ==========================================================================
 
 function renderWeeklyScheduleGrid() {
   const grid = document.getElementById("weeklyScheduleGrid");
@@ -315,47 +295,39 @@ function renderWeeklyScheduleGrid() {
   const spaceMap = {};
   spaces.forEach((s) => (spaceMap[s.id] = s));
 
-  const activeBookings = (appData.state.bookings || []).filter((b) => {
-    if (b.status !== "ACTIVA") return false;
-    if (!enabledSpaceIds.has(b.spaceId)) return false;
-    const sp = spaceMap[b.spaceId];
-    if (spaceFilterMode === "VALIDA" && sp && sp.status !== "DISPONIBLE") return false;
-    return true;
-  });
+  const activeBookings = (appData.state.bookings || []).filter((b) => b.status === "ACTIVA");
 
-  // 1. Fila de encabezados (Esquina + 7 días de la semana)
-  let html = `<div class="grid-head-corner">HORA</div>`;
+  // 1. Encabezados de columnas
+  let html = `<div class="grid-corner">HORA</div>`;
   WEEK_DAYS.forEach((d) => {
-    const isAct = d.date === selectedDate ? "active-day" : "";
-    html += `<div class="grid-day-header ${isAct}" onclick="selectDate('${d.date}')">${d.label}</div>`;
+    const isCur = d.date === currentSelectedDate ? "current-selected-day" : "";
+    html += `<div class="grid-day-col-head ${isCur}" onclick="selectCalendarDate('${d.date}')">${d.label}</div>`;
   });
 
-  // 2. Filas horarias (06:00 a 21:00)
-  HOURS_LIST.forEach((hr) => {
-    const hrMin = toMin(hr.hhmm);
-    html += `<div class="grid-time-label">${hr.label}</div>`;
+  // 2. Filas de horas (06:00 a 20:00)
+  SCHEDULE_HOURS.forEach((h) => {
+    const slotMin = toMin(h.hhmm);
+    html += `<div class="grid-hour-label">${h.label}</div>`;
 
     WEEK_DAYS.forEach((day) => {
-      const cellBookings = activeBookings.filter((b) => {
+      const dayBookings = activeBookings.filter((b) => {
         if (b.date !== day.date) return false;
         const bStart = toMin(b.startTime);
         const bEnd = toMin(b.endTime);
-        return hrMin >= bStart && hrMin < bEnd;
+        return slotMin >= bStart && slotMin < bEnd;
       });
 
-      const eventsHtml = cellBookings
+      const eventsHtml = dayBookings
         .map((b) => {
-          const tag = b.bookingTag || "OCUPADO";
           const room = spaceMap[b.spaceId];
-          const cap = room ? room.capacity : 35;
+          const tag = b.bookingTag || (room && room.status !== "DISPONIBLE" ? "RESERVADO" : "OCUPADO");
           return `
-            <div class="cal-event-block tag-${tag}" onclick="event.stopPropagation(); inspectBooking('${b.id}')">
-              <div class="ev-room">
-                <span>${escapeHtml(b.spaceName)} ✅</span>
-                <small>${escapeHtml(tag)}</small>
+            <div class="schedule-card-ev tag-${tag}" title="${escapeHtml(b.activityTitle)}">
+              <div class="ev-head">
+                <span>${escapeHtml(b.spaceName)}</span>
+                <small>${escapeHtml(b.startTime)}</small>
               </div>
-              <div class="ev-title">${escapeHtml(b.activityTitle)}</div>
-              <div class="ev-meta">${escapeHtml(b.startTime)}–${escapeHtml(b.endTime)} • ${b.attendees}/${cap} pax</div>
+              <div class="ev-desc">${escapeHtml(b.activityTitle)}</div>
             </div>
           `;
         })
@@ -363,9 +335,9 @@ function renderWeeklyScheduleGrid() {
 
       html += `
         <div
-          class="grid-slot-cell"
-          title="Clic para apartar el ${day.label} a las ${hr.label}"
-          onclick="selectCalendarCell('${day.date}', '${hr.hhmm}')"
+          class="grid-cell-slot"
+          title="Clic para agendar el ${day.label} a las ${h.label}"
+          onclick="clickScheduleSlot('${day.date}', '${h.hhmm}')"
         >
           ${eventsHtml}
         </div>
@@ -376,164 +348,113 @@ function renderWeeklyScheduleGrid() {
   grid.innerHTML = html;
 }
 
-function selectCalendarCell(dateStr, startTime) {
-  selectDate(dateStr);
-  const startSel = document.getElementById("bookingStart");
-  if (startSel) {
-    startSel.value = startTime;
-    syncEndHour();
+function clickScheduleSlot(dateStr, timeStr) {
+  selectCalendarDate(dateStr);
+  const startInput = document.getElementById("bookingStart");
+  const endInput = document.getElementById("bookingEnd");
+  if (startInput) startInput.value = timeStr;
+  if (endInput) {
+    const hour = parseInt(timeStr.split(":")[0], 10);
+    endInput.value = `${String(Math.min(22, hour + 2)).padStart(2, "0")}:00`;
   }
   document.getElementById("bookingActivity")?.focus();
-  showToast(`Horario seleccionado: ${dateStr} a las ${startTime}`);
-}
-
-function syncEndHour() {
-  const startVal = document.getElementById("bookingStart")?.value || "14:00";
-  const endSel = document.getElementById("bookingEnd");
-  if (!endSel) return;
-  const startHour = parseInt(startVal.split(":")[0], 10);
-  const nextHour = Math.min(22, startHour + 2);
-  endSel.value = `${String(nextHour).padStart(2, "0")}:00`;
-}
-
-function inspectBooking(bookingId) {
-  const b = (appData.state.bookings || []).find((x) => x.id === bookingId);
-  if (!b) return;
-  showBanner(
-    `${b.spaceName} (${b.bookingTag || "RESERVADO"}): "${b.activityTitle}" — Responsable: ${b.requesterName} (${b.attendees} personas, ${b.date} ${b.startTime}–${b.endTime})`,
-    "success"
-  );
+  showToast(`Horario seleccionado: ${dateStr} a las ${timeStr}`);
 }
 
 // ==========================================================================
-// CAPACIDAD DINÁMICA POR SALÓN + AVISOS AUTOMÁTICOS EN VIVO
+// CAPACIDAD DINÁMICA SEGÚN SALÓN Y AVISOS AUTOMÁTICOS
 // ==========================================================================
 
-function selectSpaceInForm(spaceId) {
-  const sel = document.getElementById("bookingSpaceId");
-  if (sel) {
-    sel.value = spaceId;
-    onSpaceOrAttendeesChange(true);
-    renderSpacesStrip();
-  }
-}
-
-function onSpaceOrAttendeesChange(notifyOnProblem = false) {
+function onSpaceOrAttendeesChange(notifyProblem = false) {
   const spaces = appData.state.spaces || [];
-  const incidents = appData.state.incidents || [];
-  const spaceId = document.getElementById("bookingSpaceId")?.value;
-  const attendees = Number(document.getElementById("bookingAttendees")?.value || 0);
+  const spaceId = document.getElementById("bookingSpaceId")?.value || "SP-APOLO";
+  const attendeesInput = document.getElementById("bookingAttendees");
+  const attendees = Number(attendeesInput?.value || 0);
   const activityText = (document.getElementById("bookingActivity")?.value || "").toLowerCase();
 
   const space = spaces.find((s) => s.id === spaceId) || spaces[0];
   if (!space) return;
 
-  const maxRatio = appData.rulesConfig?.MAX_CAPACITY_OVERFLOW_RATIO || 1.0;
-  const maxAllowed = Math.floor(space.capacity * maxRatio);
+  const maxAllowed = space.capacity || 35;
 
-  // 1. Cambiar capacidad mostrada según el salón seleccionado
+  // 1. Actualizar indicador de capacidad en el título
   const capTag = document.getElementById("selectedSpaceCapTag");
   const maxLabel = document.getElementById("attendeesMaxLabel");
   if (capTag) capTag.textContent = `Capacidad: ${maxAllowed} personas`;
   if (maxLabel) maxLabel.textContent = `(Máx: ${maxAllowed})`;
 
-  // 2. Actualizar recuadro dinámico del salón
-  const dynBox = document.getElementById("spaceDynamicCard");
-  if (dynBox) {
-    const pct = Math.min(100, Math.round((attendees / maxAllowed) * 100));
-    const isOver = attendees > maxAllowed;
-    const hasProblem = space.status !== "DISPONIBLE";
-    const color = hasProblem ? "var(--accent-red)" : isOver ? "var(--accent-yellow)" : "var(--accent-green)";
-
-    dynBox.innerHTML = `
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <strong>📍 ${escapeHtml(space.name)} (${escapeHtml(space.zone)})</strong>
-        <span class="badge-pill ${hasProblem ? "high" : isOver ? "med" : "low"}">
-          ${hasProblem ? "⚠️ PROBLEMA INSTALACIÓN" : isOver ? "🚫 EXCESO PERSONAL" : "✅ DISPONIBLE"}
-        </span>
-      </div>
-      <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted);">
-        <span>Personas ingresadas: <strong>${attendees}</strong></span>
-        <span>Capacidad del salón: <strong>${maxAllowed} personas</strong></span>
-      </div>
-      <div class="bar-track">
-        <div class="bar-fill" style="width:${Math.max(8, pct)}%; background:${color};"></div>
-      </div>
-    `;
-  }
-
-  // 3. AVISO AUTOMÁTICO 1: Problema en la instalación o riesgo de seguridad al seleccionar el lugar
+  // 2. AVISO AUTOMÁTICO 1: Si el salón tiene problema técnico o riesgo de seguridad
   const secWarnEl = document.getElementById("liveSecurityWarning");
-  const openRoomIncidents = incidents.filter(
-    (i) => i.targetId === space.id && i.status === "ABIERTA"
-  );
-  const riskyInput = /ignorar|desactivar|alarma|220v|sobrecarga|minero|cortocircuito|hack|<script/i.test(
-    activityText
-  );
+  const hasProblem = space.status !== "DISPONIBLE";
+  const isRiskyText = /ignorar|desactivar|alarma|220v|sobrecarga|minero|cortocircuito|hack/i.test(activityText);
 
   if (secWarnEl) {
-    if (space.status !== "DISPONIBLE" || openRoomIncidents.length > 0) {
-      const reason =
-        openRoomIncidents.length > 0
-          ? `${openRoomIncidents[0].title} — ${openRoomIncidents[0].description}`
-          : space.lockReason || "Instalación con novedad técnica.";
-
+    if (hasProblem) {
+      const reason = space.lockReason || "Instalación en mantenimiento o falla eléctrica";
       secWarnEl.style.display = "block";
       secWarnEl.innerHTML = `
-        <strong>🚨 Aviso de Problema en Instalación (${escapeHtml(space.name)}):</strong><br/>
-        Este salón reporta un fallo activo: <em>${escapeHtml(reason)}</em>.<br/>
-        <small>Selecciona otro salón disponible o habilítalo desde la pestaña Problemas de Instalación.</small>
+        <strong>🚨 Problema en Instalación Detectado (${escapeHtml(space.name)}):</strong><br/>
+        Este salón reporta una falla técnica: <em>${escapeHtml(reason)}</em>.<br/>
+        <small style="opacity: 0.9;">Te sugerimos seleccionar un salón habilitado o resolver la alerta en Seguridad.</small>
       `;
-      if (notifyOnProblem) {
-        showToast(`⚠️ ${space.name} tiene un problema en la instalación`, "error");
+      if (notifyProblem) {
+        showToast(`⚠️ ${space.name} presenta un problema en la instalación`, "error");
       }
-    } else if (riskyInput) {
+    } else if (isRiskyText) {
       secWarnEl.style.display = "block";
       secWarnEl.innerHTML = `
         <strong>🚨 Riesgo de Seguridad Detectado:</strong><br/>
-        La actividad descrita representa un riesgo para la instalación o intenta evadir las reglas.
+        La actividad ingresada contiene condiciones de riesgo eléctrico o evasión de protocolos.
       `;
     } else {
       secWarnEl.style.display = "none";
     }
   }
 
-  // 4. AVISO AUTOMÁTICO 2: Si las personas ingresadas superan la capacidad del salón
+  // 3. AVISO AUTOMÁTICO 2: Si las personas superan la capacidad del salón
   const capWarnEl = document.getElementById("liveCapacityWarning");
   if (capWarnEl) {
     if (attendees > maxAllowed) {
       const excess = attendees - maxAllowed;
-      const alternatives = spaces.filter(
-        (s) => s.status === "DISPONIBLE" && Math.floor(s.capacity * maxRatio) >= attendees
-      );
+      const alternatives = spaces.filter((s) => s.status === "DISPONIBLE" && s.capacity >= attendees);
 
       const altBtns =
         alternatives.length > 0
-          ? `<div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+          ? `<div style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap;">
+              <span>Salones con capacidad suficiente:</span>
               ${alternatives
                 .map(
                   (a) =>
-                    `<button type="button" class="btn-inline" onclick="selectSpaceInForm('${a.id}')">
+                    `<button type="button" class="btn-mini" onclick="selectSpaceFromCard('${a.id}')">
                       Cambiar a ${escapeHtml(a.name)} (Cap: ${a.capacity})
                     </button>`
                 )
                 .join("")}
             </div>`
-          : `<div style="margin-top:4px;">Reduce el grupo a máximo <strong>${maxAllowed} personas</strong>.</div>`;
+          : `<div style="margin-top: 4px;">Reduce el número de asistentes a máximo ${maxAllowed} personas.</div>`;
 
       capWarnEl.style.display = "block";
       capWarnEl.innerHTML = `
         <strong>⚠️ Exceso de Personal en ${escapeHtml(space.name)}:</strong><br/>
-        Ingresaste <strong>${attendees} personas</strong> y la capacidad máxima de este salón es de <strong>${maxAllowed} personas</strong> (exceso de ${excess}).
+        Ingresaste <strong>${attendees} personas</strong>, pero la capacidad máxima de este salón es de <strong>${maxAllowed} personas</strong> (te pasas por ${excess}).
         ${altBtns}
       `;
     } else {
       capWarnEl.style.display = "none";
     }
   }
-
-  renderSpacesStrip();
 }
+
+function setQuickBlock(start, end) {
+  const startInput = document.getElementById("bookingStart");
+  const endInput = document.getElementById("bookingEnd");
+  if (startInput) startInput.value = start;
+  if (endInput) endInput.value = end;
+}
+
+// ==========================================================================
+// ENVÍO DE RESERVA
+// ==========================================================================
 
 async function submitBooking(e) {
   e.preventDefault();
@@ -543,7 +464,6 @@ async function submitBooking(e) {
   const payload = {
     spaceId: document.getElementById("bookingSpaceId").value,
     attendees: Number(document.getElementById("bookingAttendees").value),
-    bookingTag: document.getElementById("bookingTag").value,
     requesterName: document.getElementById("bookingRequester").value,
     requesterRole: document.getElementById("bookingRole").value,
     activityTitle: document.getElementById("bookingActivity").value,
@@ -553,7 +473,7 @@ async function submitBooking(e) {
   };
 
   btn.disabled = true;
-  setLoader(true, "Verificando aforo, horario y seguridad en motor Python...");
+  setLoader(true, "Verificando disponibilidad y políticas de seguridad...");
 
   try {
     const res = await fetch("/api/bookings", {
@@ -563,27 +483,29 @@ async function submitBooking(e) {
     });
     const data = await res.json();
 
-    auditBox.style.display = "block";
-    auditBox.style.borderColor = data.ok ? "var(--accent-green)" : "var(--accent-red)";
-    auditBox.innerHTML = `
-      <strong style="color:${data.ok ? "#34D399" : "#FB7185"};">
-        ${data.ok ? "✅ Reserva Registrada en Calendario" : "🚫 Reserva Rechazada"}
-      </strong>
-      <p style="margin-top:4px; color:var(--text-muted);">${escapeHtml(data.message)}</p>
-    `;
+    if (auditBox) {
+      auditBox.style.display = "block";
+      auditBox.style.borderColor = data.ok ? "var(--prio-low)" : "var(--prio-high)";
+      auditBox.innerHTML = `
+        <strong style="color: ${data.ok ? "#6EE7B7" : "#FDA4AF"};">
+          ${data.ok ? "✅ Reserva Confirmada" : "🚫 Solicitud Bloqueada"}
+        </strong>
+        <p style="margin-top: 4px; color: var(--text-secondary);">${escapeHtml(data.message)}</p>
+      `;
+    }
 
     if (res.ok && data.ok) {
-      selectedDate = payload.date;
+      currentSelectedDate = payload.date;
       showToast(data.message, "success");
       showBanner(data.message, "success");
       document.getElementById("bookingActivity").value = "";
     } else {
-      showToast(data.message, "error");
-      showBanner(data.message, "error");
+      showToast(data.message || "Error al apartar salón", "error");
+      showBanner(data.message || "No se pudo completar la reserva", "error");
     }
     await loadState();
   } catch (err) {
-    showToast("Error al guardar la reserva", "error");
+    showToast("Error de conexión al procesar la reserva", "error");
   } finally {
     btn.disabled = false;
     setLoader(false);
@@ -591,7 +513,7 @@ async function submitBooking(e) {
 }
 
 // ==========================================================================
-// VISTA 2: BASE DE DATOS Y ANALÍTICA
+// BASE DE DATOS Y SEGURIDAD
 // ==========================================================================
 
 function renderDatabaseView() {
@@ -603,16 +525,16 @@ function renderDatabaseView() {
     barsEl.innerHTML = spaces
       .map((s) => {
         const roomBookings = bookings.filter((b) => b.spaceId === s.id && b.status === "ACTIVA");
-        const maxPax = roomBookings.reduce((m, b) => Math.max(m, b.attendees || 0), 0);
-        const pct = Math.min(100, Math.round((maxPax / s.capacity) * 100));
+        const totalPax = roomBookings.reduce((sum, b) => sum + (b.attendees || 0), 0);
+        const pct = Math.min(100, Math.round((totalPax / s.capacity) * 100));
         return `
-          <div style="display:flex; flex-direction:column; gap:4px;">
-            <div style="display:flex; justify-content:space-between; font-size:0.78rem;">
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.76rem;">
               <span><strong>${escapeHtml(s.name)}</strong> (Capacidad: ${s.capacity})</span>
-              <span>${roomBookings.length} reserva(s) • Pico: ${maxPax}/${s.capacity} pax</span>
+              <span>${roomBookings.length} reserva(s) • ${totalPax}/${s.capacity} pax (${pct}%)</span>
             </div>
             <div class="bar-track">
-              <div class="bar-fill" style="width:${Math.max(6, pct)}%; background:${s.color || "var(--accent-cyan)"};"></div>
+              <div class="bar-fill" style="width: ${Math.max(6, pct)}%; background: ${s.color || "var(--campus-cyan)"};"></div>
             </div>
           </div>
         `;
@@ -627,10 +549,10 @@ function renderDatabaseView() {
     const cancelled = bookings.filter((b) => b.status === "CANCELADA").length;
 
     summaryEl.innerHTML = `
-      <div class="stat-tile"><span>TOTAL REGISTROS BD</span><strong>${bookings.length}</strong></div>
-      <div class="stat-tile"><span>ACTIVAS EN CALENDARIO</span><strong style="color:var(--accent-green);">${active}</strong></div>
-      <div class="stat-tile"><span>BLOQUEOS DE SEGURIDAD</span><strong style="color:var(--accent-red);">${blocked}</strong></div>
-      <div class="stat-tile"><span>LIBERADAS</span><strong>${cancelled}</strong></div>
+      <div class="sec-stat-card"><span class="kpi-title">TOTAL EN BD</span><strong>${bookings.length}</strong></div>
+      <div class="sec-stat-card"><span class="kpi-title">ACTIVAS</span><strong style="color: var(--prio-low);">${active}</strong></div>
+      <div class="sec-stat-card"><span class="kpi-title">BLOQUEOS SEGURIDAD</span><strong style="color: var(--prio-high);">${blocked}</strong></div>
+      <div class="sec-stat-card"><span class="kpi-title">LIBERADAS</span><strong>${cancelled}</strong></div>
     `;
   }
 
@@ -651,30 +573,22 @@ function renderDatabaseView() {
 
   tbody.innerHTML = filtered
     .map((b) => {
-      const badgeCls =
-        b.status === "ACTIVA" ? "low" : b.status === "BLOQUEADA_SEGURIDAD" ? "high" : "med";
+      const isAct = b.status === "ACTIVA";
       return `
         <tr>
-          <td style="font-family:var(--font-mono);">${escapeHtml(b.id)}</td>
+          <td style="font-family: var(--font-mono);">${escapeHtml(b.id)}</td>
           <td><strong>${escapeHtml(b.spaceName)}</strong></td>
-          <td><span class="badge-pill ${badgeCls}">${escapeHtml(b.bookingTag || b.status)}</span></td>
-          <td>${escapeHtml(b.requesterName)} <small style="color:var(--text-muted);">(${escapeHtml(
-        b.requesterRole
-      )})</small></td>
+          <td>${escapeHtml(b.requesterName)} <small style="color: var(--text-secondary);">(${escapeHtml(b.requesterRole || "TRAINER")})</small></td>
           <td>${escapeHtml(b.activityTitle)}</td>
-          <td style="font-family:var(--font-mono);">${escapeHtml(b.date)} ${escapeHtml(b.startTime)}–${escapeHtml(
-        b.endTime
-      )}</td>
+          <td style="font-family: var(--font-mono); font-size: 0.72rem;">${escapeHtml(b.date)}<br/>${escapeHtml(b.startTime)}–${escapeHtml(b.endTime)}</td>
           <td>${b.attendees} personas</td>
-          <td style="color:var(--text-muted);">${escapeHtml(b.securityNote || "Verificado")}</td>
+          <td><span class="status-badge ${b.riskLevel === "CRITICO" ? "high" : "low"}">${escapeHtml(b.riskLevel || "BAJO")}</span></td>
+          <td><span class="status-badge ${isAct ? "low" : "high"}">${escapeHtml(b.status)}</span></td>
+          <td style="font-size: 0.72rem; color: var(--text-secondary); max-width: 220px;">${escapeHtml(b.securityNote || "Verificado")}</td>
           <td>
-            <div style="display:flex; gap:6px;">
-              ${
-                b.status === "ACTIVA"
-                  ? `<button type="button" class="btn-inline" onclick="cancelBooking('${b.id}')">Liberar</button>`
-                  : ""
-              }
-              <button type="button" class="btn-inline" style="color:#FB7185;" onclick="deleteBooking('${b.id}')">✕</button>
+            <div style="display: flex; gap: 4px;">
+              ${isAct ? `<button type="button" class="btn-mini" onclick="cancelBooking('${b.id}')">Liberar</button>` : ""}
+              <button type="button" class="btn-mini" style="color: #FDA4AF;" onclick="deleteBooking('${b.id}')">✕</button>
             </div>
           </td>
         </tr>
@@ -709,10 +623,6 @@ async function deleteBooking(bookingId) {
   }
 }
 
-// ==========================================================================
-// VISTA 3: PROBLEMAS DE INSTALACIÓN Y SEGURIDAD EN SALONES
-// ==========================================================================
-
 function renderSecurityView() {
   const container = document.getElementById("incidentsList");
   if (!container) return;
@@ -722,18 +632,18 @@ function renderSecurityView() {
     .map((inc) => {
       const cls = inc.severity === "CRITICA" ? "high" : inc.severity === "MEDIA" ? "med" : "low";
       return `
-        <article class="card-panel" style="padding:12px;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <article class="sec-stat-card" style="gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
             <strong>${escapeHtml(inc.targetId)} — ${escapeHtml(inc.title)}</strong>
-            <span class="badge-pill ${cls}">${escapeHtml(inc.severity)} (${escapeHtml(inc.status)})</span>
+            <span class="status-badge ${cls}">${escapeHtml(inc.severity)} (${escapeHtml(inc.status)})</span>
           </div>
-          <p style="color:var(--text-muted); font-size:0.78rem; margin-bottom:8px;">${escapeHtml(inc.description)}</p>
+          <p style="color: var(--text-secondary); font-size: 0.76rem;">${escapeHtml(inc.description)}</p>
           ${
             inc.status === "ABIERTA"
-              ? `<button type="button" class="btn-inline" style="color:#34D399;" onclick="resolveIncident('${inc.id}')">
-                  ✅ Solucionar Problema y Habilitar Salón
+              ? `<button type="button" class="btn-mini" style="color: #34D399; width: fit-content;" onclick="resolveIncident('${inc.id}')">
+                  ✅ Resolver Falla y Habilitar Salón
                 </button>`
-              : `<span style="color:#34D399; font-size:0.74rem;">✔ Problema solucionado</span>`
+              : `<span style="color: #34D399; font-size: 0.74rem;">✔ Problema resuelto</span>`
           }
         </article>
       `;
@@ -743,16 +653,13 @@ function renderSecurityView() {
 
 async function submitIncident(e) {
   e.preventDefault();
-  const btn = document.getElementById("btnSubmitIncident");
   const payload = {
     targetId: document.getElementById("incidentTargetId").value,
     title: document.getElementById("incidentTitle").value,
     description: document.getElementById("incidentDesc").value
   };
 
-  btn.disabled = true;
-  setLoader(true, "Registrando problema en la instalación del salón...");
-
+  setLoader(true, "Registrando alerta de instalación...");
   try {
     const res = await fetch("/api/incidents", {
       method: "POST",
@@ -768,7 +675,6 @@ async function submitIncident(e) {
       await loadState();
     }
   } finally {
-    btn.disabled = false;
     setLoader(false);
   }
 }
@@ -787,14 +693,14 @@ async function resolveIncident(incidentId) {
 }
 
 // ==========================================================================
-// ASISTENTE PYTHON (src/assistant_engine.py) Y EXPORTACIÓN CSV
+// ASISTENTE DE SALONES Y EXPORTACIÓN CSV
 // ==========================================================================
 
 function exportReportCSV() {
   window.location.href = "/api/export/csv";
 }
 
-function toggleChatDrawer() {
+function toggleChat() {
   const drawer = document.getElementById("chatDrawer");
   if (!drawer) return;
   drawer.classList.toggle("open");
@@ -803,17 +709,15 @@ function toggleChatDrawer() {
   }
 }
 
-function askAssistant(questionText) {
+function askQuick(q) {
   const drawer = document.getElementById("chatDrawer");
-  if (drawer && !drawer.classList.contains("open")) {
-    drawer.classList.add("open");
-  }
+  if (drawer && !drawer.classList.contains("open")) drawer.classList.add("open");
   const input = document.getElementById("chatInput");
-  if (input) input.value = questionText;
-  submitAssistantChat(new Event("submit"));
+  if (input) input.value = q;
+  submitChat(new Event("submit"));
 }
 
-async function submitAssistantChat(e) {
+async function submitChat(e) {
   if (e && e.preventDefault) e.preventDefault();
   const input = document.getElementById("chatInput");
   const msgs = document.getElementById("chatMessages");
@@ -822,10 +726,10 @@ async function submitAssistantChat(e) {
   if (!q) return;
 
   input.value = "";
-  msgs.innerHTML += `<article class="msg-bubble user">${escapeHtml(q)}</article>`;
+  msgs.innerHTML += `<div class="bubble user">${escapeHtml(q)}</div>`;
 
-  const loadId = "py-msg-" + Date.now();
-  msgs.innerHTML += `<article id="${loadId}" class="msg-bubble bot">⏳ Consultando motor Python (<code>assistant_engine.py</code>)...</article>`;
+  const loadId = "load-" + Date.now();
+  msgs.innerHTML += `<div id="${loadId}" class="bubble bot">⏳ Consultando estado del campus...</div>`;
   msgs.scrollTop = msgs.scrollHeight;
   if (btn) btn.disabled = true;
 
@@ -833,16 +737,16 @@ async function submitAssistantChat(e) {
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question: q, date: selectedDate })
+      body: JSON.stringify({ question: q, date: currentSelectedDate })
     });
     const data = await res.json();
-    const bubble = document.getElementById(loadId);
-    if (bubble) {
-      bubble.textContent = data.reply || data.message || "Consulta completada.";
+    const el = document.getElementById(loadId);
+    if (el) {
+      el.textContent = data.reply || data.message || "Consulta completada.";
     }
   } catch (err) {
-    const bubble = document.getElementById(loadId);
-    if (bubble) bubble.textContent = "Error al consultar el motor Python.";
+    const el = document.getElementById(loadId);
+    if (el) el.textContent = "Error al consultar el asistente.";
   } finally {
     if (btn) btn.disabled = false;
     msgs.scrollTop = msgs.scrollHeight;
@@ -850,5 +754,6 @@ async function submitAssistantChat(e) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+  startClock();
   loadState();
 });

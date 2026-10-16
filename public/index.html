@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Portal Espacios Campuslands | Calendario, Reservas y Seguridad</title>
+  <title>Portal Espacios Campuslands | Reservas, Calendario y Seguridad</title>
   <link rel="icon" type="image/svg+xml" href="/assets/casco_azul.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -11,391 +11,420 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <!-- Notificaciones flotantes -->
-  <section id="toastContainer" class="toast-container" aria-live="polite"></section>
-
-  <!--CABECERA PRINCIPAL (UN SOLO LOGO, PANTALLA COMPLETA)-->
-  <header class="portal-header">
-    <div class="header-brand">
-      <img src="/assets/casco_azul.svg" alt="Logo Campuslands" class="single-logo" />
-      <div class="header-titles">
-        <h1>Portal Espacios Campuslands</h1>
-        <span class="header-sub">Calendario de Salones • Seguridad &amp; Reservas</span>
-      </div>
-    </div>
-
-    <nav class="header-nav" aria-label="Vistas del Portal">
-      <button type="button" class="nav-tab active" data-view="view-portal" onclick="switchView('view-portal')">
-        📅 Calendario y Salones
-      </button>
-      <button type="button" class="nav-tab" data-view="view-database" onclick="switchView('view-database')">
-        🗄️ Base de Datos (<span id="dbCountBadge">0</span>)
-      </button>
-      <button type="button" class="nav-tab" data-view="view-security" onclick="switchView('view-security')">
-        🛡️ Problemas de Instalación (<span id="secCountBadge">0</span>)
-      </button>
-    </nav>
-
-    <div class="header-actions">
-      <span class="security-pill" title="Motor de Seguridad en Python Activo">
-        <i class="dot-online"></i> Python Security Activo
-      </span>
-      <button type="button" class="btn-top" onclick="exportReportCSV()">📥 Exportar CSV</button>
-      <button type="button" class="btn-top btn-assistant" onclick="toggleChatDrawer()">
-        💬 Asistente Python
-      </button>
-    </div>
-  </header>
-
-  <!-- BARRA DE ESTADO / MENSAJES DE RESPUESTA -->
-  <output id="feedbackBanner" class="feedback-banner" style="display: none;"></output>
-  <div id="globalLoader" class="loader-strip" style="display: none;" role="status">
-    <span class="spinner"></span>
-    <span id="loaderText">Procesando en el motor de seguridad Python...</span>
+  <!-- Fondo Espacial Campuslands -->
+  <div class="cosmic-bg" aria-hidden="true">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
   </div>
 
-  <!-- ====================================================================== -->
-  <!-- VISTA 1: PORTAL PRINCIPAL (CALENDARIO SIEMPRE VISIBLE + RESERVA)       -->
-  <!-- ====================================================================== -->
-  <main id="view-portal" class="portal-main active">
-    <!-- COLUMNA IZQUIERDA: MINI CALENDARIO + FILTROS PLEGABLES -->
-    <aside class="left-sidebar" aria-label="Calendario Mensual y Filtros">
-      <div class="week-switcher">
-        <button type="button" class="btn-day-step" onclick="stepSelectedDate(-1)" title="Día anterior">‹</button>
-        <button type="button" class="btn-today" onclick="selectDate('2026-10-16')">Hoy</button>
-        <button type="button" class="btn-day-step" onclick="stepSelectedDate(1)" title="Día siguiente">›</button>
-        <span class="week-range-label">11 oct. – 17 oct. 2026</span>
+  <!-- Contenedor de Toasts -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <div class="app-shell">
+    <!-- BARRA SUPERIOR (UN SOLO LOGO, SIN DUPLICADOS) -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo-badge">
+          <img src="/assets/casco_azul.svg" alt="Campuslands" class="helmet-icon" />
+        </div>
+        <div class="brand-meta">
+          <span class="brand-title-main">Portal Espacios Campuslands</span>
+          <span class="brand-tag">MISSION CONTROL • SEGURIDAD &amp; RESERVAS</span>
+        </div>
       </div>
 
-      <!-- Mini Calendario Mensual Interactivo -->
-      <section class="mini-calendar-box" aria-label="Octubre 2026">
-        <header class="mini-cal-header">
-          <span>‹</span>
-          <strong>2026 octubre</strong>
-          <span>›</span>
-        </header>
-        <div class="mini-cal-weekdays">
-          <span>DOM</span><span>LUN</span><span>MAR</span><span>MIÉ</span><span>JUE</span><span>VIE</span><span>SÁB</span>
+      <nav class="nav-pills" aria-label="Navegación Principal">
+        <button type="button" class="nav-pill active" data-view="view-spaces" onclick="switchView('view-spaces')">
+          <span class="white-calendar-icon">📅</span> Espacios &amp; Calendario
+        </button>
+        <button type="button" class="nav-pill" data-view="view-database" onclick="switchView('view-database')">
+          🗄️ Base de Datos &amp; Analítica
+          <span class="pill-count" id="dbCountBadge">0</span>
+        </button>
+        <button type="button" class="nav-pill" data-view="view-security" onclick="switchView('view-security')">
+          🛡️ Problemas de Instalación
+          <span class="pill-count danger" id="secCountBadge">0</span>
+        </button>
+      </nav>
+
+      <div class="nav-actions">
+        <div class="security-indicator" title="Monitoreo de Seguridad Activo">
+          <span class="status-dot"></span>
+          <span>Escudo Activo</span>
         </div>
-        <div id="miniCalendarDays" class="mini-cal-days"></div>
-      </section>
+        <span class="live-clock" id="liveClock">08:00:00</span>
+        <button type="button" class="btn-icon-text" onclick="exportReportCSV()" title="Descargar Base de Datos en CSV">
+          📥 CSV
+        </button>
+        <button type="button" class="btn-icon-text assistant-toggle" onclick="toggleChat()" title="Consultar al Asistente">
+          💬 Asistente
+        </button>
+      </div>
+    </header>
 
-      <!-- Sección Plegable 1: Estado (Solo Válida / Disponible y Ocupado / En uso) -->
-      <details class="collapsible-box" open>
-        <summary>Estado de Espacios</summary>
-        <div class="filter-options-list">
-          <label class="radio-option">
-            <input type="radio" name="spaceStateFilter" value="ALL" checked onchange="setFilterMode('ALL')" />
-            <span>Mostrar todos</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="spaceStateFilter" value="VALIDA" onchange="setFilterMode('VALIDA')" />
-            <span class="text-green">✅ Válida (Disponibles)</span>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="spaceStateFilter" value="OCUPADO" onchange="setFilterMode('OCUPADO')" />
-            <span class="text-cyan">🔵 Ocupado / En uso</span>
-          </label>
+    <!-- 4 CONTADORES MINIMALISTAS (KPIS) -->
+    <section class="kpi-strip" aria-label="Indicadores de Espacios">
+      <div class="kpi-box prio-low" onclick="setFilterMode('VALIDA')">
+        <span class="kpi-title">SALONES DISPONIBLES</span>
+        <div class="kpi-main">
+          <strong id="kpiFreeSpaces">5</strong>
+          <small id="kpiTotalSpaces">/ 7 salones</small>
         </div>
-      </details>
+      </div>
 
-      <!-- Sección Plegable 2: Mis Calendarios / Salones -->
-      <details class="collapsible-box" open>
-        <summary>Mis Salones (Capacidad)</summary>
-        <div id="roomCheckboxesList" class="checkbox-list"></div>
-      </details>
-    </aside>
+      <div class="kpi-box prio-info" onclick="setFilterMode('OCUPADO')">
+        <span class="kpi-title">OCUPADOS / EN USO</span>
+        <div class="kpi-main">
+          <strong id="kpiActiveBookings">3</strong>
+          <small>en curso</small>
+        </div>
+      </div>
 
-    <!-- COLUMNA CENTRAL: TARJETAS DE SALONES + CALENDARIO SEMANAL SIEMPRE VISIBLE -->
-    <section class="center-schedule-area" aria-label="Estado de Salones y Calendario Semanal">
-      <!-- Tira superior de salones (muestra capacidad y estado en vivo; clic para seleccionar) -->
-      <div id="spacesStrip" class="spaces-strip"></div>
+      <div class="kpi-box prio-high" onclick="switchView('view-security')">
+        <span class="kpi-title">PROBLEMAS EN INSTALACIÓN</span>
+        <div class="kpi-main">
+          <strong id="kpiSecurityAlerts">2</strong>
+          <small id="kpiBlockedRooms">salones afectados</small>
+        </div>
+      </div>
 
-      <!-- Calendario Semanal Tipo Portal Campers (DOM 11 a SÁB 17, 06:00 a 22:00) -->
-      <div class="weekly-schedule-container">
-        <div id="weeklyScheduleGrid" class="weekly-grid"></div>
+      <div class="kpi-box prio-mint" onclick="switchView('view-database')">
+        <span class="kpi-title">OCUPACIÓN CAMPUS</span>
+        <div class="kpi-main">
+          <strong id="kpiOccupancyRate">42%</strong>
+          <small id="kpiTotalPax">83 personas</small>
+        </div>
       </div>
     </section>
 
-    <!-- COLUMNA DERECHA: FORMULARIO DE RESERVA SENCILLO Y AVISOS EN VIVO -->
-    <aside class="right-booking-sidebar" aria-label="Formulario de Reserva de Salón">
-      <header class="form-sidebar-header">
-        <h2>Apartar / Reservar Salón</h2>
-        <span id="selectedSpaceCapTag" class="cap-badge">Capacidad: 35 personas</span>
-      </header>
+    <!-- INDICADOR DE CARGA Y MENSAJES -->
+    <div id="globalLoader" class="loader-bar" style="display: none;" role="status">
+      <div class="spinner-ring"></div>
+      <span id="loaderText">Cargando... Verificando disponibilidad y condiciones de seguridad...</span>
+    </div>
 
-      <form id="bookingForm" class="booking-form" onsubmit="submitBooking(event)">
-        <fieldset class="form-fieldset">
-          <legend class="sr-only">Datos de la Reserva</legend>
+    <div id="feedbackBanner" class="feedback-bar" style="display: none;" role="alert"></div>
 
-          <div class="form-group">
-            <label for="bookingSpaceId">1. Lugar / Salón</label>
-            <select id="bookingSpaceId" onchange="onSpaceOrAttendeesChange(true)" required></select>
+    <!-- ==================================================================== -->
+    <!-- VISTA 1: ESPACIOS, CALENDARIO SEMANAL Y RESERVAS                     -->
+    <!-- ==================================================================== -->
+    <main id="view-spaces" class="view-pane active">
+      <div class="spaces-workspace">
+        <!-- COLUMNA IZQUIERDA/CENTRAL: SALONES + CALENDARIO SEMANAL (RECUADRO QUE ANTES ESTABA VACÍO) -->
+        <section class="panel spaces-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Salones e Instalaciones</h2>
+              <span class="subtle-text">Selecciona un salón para apartarlo o haz clic en un bloque libre del calendario</span>
+            </div>
+            <!-- Dos opciones principales de visualización solicitadas -->
+            <div class="mode-switch-group">
+              <button type="button" id="btnModeAll" class="mode-chip active" onclick="setFilterMode('ALL')">
+                Todos
+              </button>
+              <button type="button" id="btnModeValida" class="mode-chip ok" onclick="setFilterMode('VALIDA')">
+                ✅ Válida (Disponibles)
+              </button>
+              <button type="button" id="btnModeOcupado" class="mode-chip info" onclick="setFilterMode('OCUPADO')">
+                🔵 Ocupado / En uso
+              </button>
+            </div>
           </div>
 
-          <!-- Resumen dinámico del salón elegido -->
-          <div id="spaceDynamicCard" class="dynamic-room-box"></div>
+          <!-- Cuadrícula limpia de salones -->
+          <div id="spacesGrid" class="spaces-grid"></div>
 
-          <!-- AVISO AUTOMÁTICO 1: Problema en instalación o riesgo de seguridad al seleccionar el lugar -->
-          <output id="liveSecurityWarning" class="alert-box alert-security" style="display: none;"></output>
+          <!-- RECUADRO CON EL CALENDARIO DE OCUPACIÓN (TIPO PORTAL CAMPERS) -->
+          <div class="calendar-embed-box">
+            <div class="calendar-embed-header">
+              <div class="cal-title-row">
+                <span class="white-calendar-icon">📅</span>
+                <strong>Calendario Semanal de Ocupación</strong>
+                <span class="week-pill">11 oct. – 17 oct. 2026</span>
+              </div>
+              <div class="week-day-tabs">
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-11')">DOM 11</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-12')">LUN 12</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-13')">MAR 13</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-14')">MIÉ 14</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-15')">JUE 15</button>
+                <button type="button" class="day-tab active" onclick="selectCalendarDate('2026-10-16')">VIE 16 (Hoy)</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-17')">SÁB 17</button>
+              </div>
+            </div>
 
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="bookingAttendees">
-                2. Personas <small id="attendeesMaxLabel">(Máx: 35)</small>
-              </label>
+            <!-- Tabla semanal tipo Portal Campers con bloques coloreados -->
+            <div class="weekly-schedule-scroll">
+              <div id="weeklyScheduleGrid" class="weekly-schedule-grid"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- COLUMNA DERECHA: FORMULARIO DE RESERVA DIRECTO Y SENCILLO -->
+        <section class="panel form-panel">
+          <div class="panel-head">
+            <h2>Apartar / Reservar Salón</h2>
+            <span id="selectedSpaceCapTag" class="tag-shield">Capacidad: 35 personas</span>
+          </div>
+
+          <form id="bookingForm" class="clean-form" onsubmit="submitBooking(event)">
+            <div class="field">
+              <label for="bookingSpaceId">Lugar / Salón</label>
+              <!-- Opciones pre-pobladas en HTML para que la barra SIEMPRE se despliegue inmediatamente al hacer clic -->
+              <select id="bookingSpaceId" onchange="onSpaceOrAttendeesChange(true)" required>
+                <option value="SP-APOLO">Nave Apolo (Capacidad: 35 personas)</option>
+                <option value="SP-ARTEMIS">Nave Artemis (Capacidad: 30 personas)</option>
+                <option value="SP-SPUTNIK">Nave Sputnik (Capacidad: 40 personas)</option>
+                <option value="SP-SER-01">Sala del Ser &amp; Inglés (Capacidad: 20 personas)</option>
+                <option value="SP-HUNTERS-01">Cabina Review #1 (Capacidad: 6 personas)</option>
+                <option value="SP-CORVUS">Auditorio Corvus (Capacidad: 80 personas — ⚠️ Falla Eléctrica)</option>
+                <option value="SP-HOUSTON">Sala Comando Houston (Capacidad: 14 personas — ⚠️ En Reparación)</option>
+              </select>
+            </div>
+
+            <!-- AVISO AUTOMÁTICO 1: Si el salón elegido tiene problema de instalación o riesgo -->
+            <div id="liveSecurityWarning" class="alert-box alert-security" style="display: none;"></div>
+
+            <div class="row-2">
+              <div class="field">
+                <label for="bookingAttendees">
+                  Cantidad de Personas <small id="attendeesMaxLabel" class="label-hint">(Máx: 35)</small>
+                </label>
+                <input
+                  type="number"
+                  id="bookingAttendees"
+                  min="1"
+                  max="150"
+                  value="25"
+                  oninput="onSpaceOrAttendeesChange(false)"
+                  required
+                />
+              </div>
+
+              <div class="field">
+                <label for="bookingRole">Rol Autorizado</label>
+                <!-- Rol Camper eliminado como solicitó el usuario -->
+                <select id="bookingRole" required>
+                  <option value="TRAINER">Trainer</option>
+                  <option value="TEAM_EDUCACION">Team Educación / Staff</option>
+                  <option value="COORDINACION">Coordinación Académica</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- AVISO AUTOMÁTICO 2: Si las personas ingresadas superan la capacidad del salón -->
+            <div id="liveCapacityWarning" class="alert-box alert-capacity" style="display: none;"></div>
+
+            <div class="field">
+              <label for="bookingRequester">Responsable</label>
+              <input type="text" id="bookingRequester" value="Trainer Carlos Rueda" placeholder="Nombre completo" required />
+            </div>
+
+            <div class="field">
+              <label for="bookingActivity">Actividad o Módulo Académico</label>
               <input
-                type="number"
-                id="bookingAttendees"
-                min="1"
-                max="200"
-                value="25"
+                type="text"
+                id="bookingActivity"
+                placeholder="Ej: Sesión Práctica de Arquitectura Backend"
                 oninput="onSpaceOrAttendeesChange(false)"
                 required
               />
             </div>
 
-            <div class="form-group">
-              <label for="bookingTag">Tipo de Uso</label>
-              <select id="bookingTag">
-                <option value="RESERVADO">Reservado</option>
-                <option value="APARTADO">Apartado</option>
-                <option value="OCUPADO">Ocupado (Clase)</option>
-              </select>
+            <div class="field">
+              <label for="bookingDate">Fecha</label>
+              <input type="date" id="bookingDate" value="2026-10-16" onchange="onDateInputChange(this.value)" required />
             </div>
+
+            <div class="row-2">
+              <div class="field">
+                <label for="bookingStart">Hora Inicio</label>
+                <input type="time" id="bookingStart" value="14:00" required />
+              </div>
+              <div class="field">
+                <label for="bookingEnd">Hora Fin</label>
+                <input type="time" id="bookingEnd" value="16:00" required />
+              </div>
+            </div>
+
+            <!-- Atajos rápidos de bloques oficiales -->
+            <div class="blocks-row">
+              <button type="button" onclick="setQuickBlock('06:00','09:30')">M1 06:00</button>
+              <button type="button" onclick="setQuickBlock('10:00','13:30')">M2 10:00</button>
+              <button type="button" onclick="setQuickBlock('14:00','17:30')">T1 14:00</button>
+              <button type="button" onclick="setQuickBlock('18:00','21:30')">T2 18:00</button>
+            </div>
+
+            <button type="submit" id="btnSubmitBooking" class="btn-primary">
+              Confirmar Reserva
+            </button>
+          </form>
+
+          <div id="auditBox" class="audit-box" style="display: none;"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ==================================================================== -->
+    <!-- VISTA 2: BASE DE DATOS EN VIVO & ANALÍTICA DE RESERVAS               -->
+    <!-- ==================================================================== -->
+    <main id="view-database" class="view-pane">
+      <div class="analytics-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Capacidad y Demanda por Salón</h2>
+            <span class="tag-mono">Sincronizado</span>
           </div>
+          <div id="spaceAnalyticsBars" class="analytics-bars"></div>
+        </section>
 
-          <!-- AVISO AUTOMÁTICO 2: Exceso de personal según capacidad del salón -->
-          <output id="liveCapacityWarning" class="alert-box alert-capacity" style="display: none;"></output>
-
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="bookingRequester">3. Responsable</label>
-              <input type="text" id="bookingRequester" value="Trainer Carlos Rueda" placeholder="Nombre" required />
-            </div>
-
-            <div class="form-group">
-              <label for="bookingRole">Rol Autorizado</label>
-              <select id="bookingRole" required>
-                <option value="TRAINER">Trainer</option>
-                <option value="TEAM_EDUCACION">Team Educación / Staff</option>
-                <option value="COORDINACION">Coordinación Académica</option>
-              </select>
-            </div>
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Métricas de Base de Datos</h2>
+            <span class="tag-mono">Tiempo Real</span>
           </div>
+          <div id="securityStatsSummary" class="security-stats-grid"></div>
+        </section>
+      </div>
 
-          <div class="form-group">
-            <label for="bookingActivity">4. Actividad o Módulo</label>
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Base de Datos de Reservas</h2>
+          <div class="db-controls">
             <input
-              type="text"
-              id="bookingActivity"
-              placeholder="Ej: JavaScript • Módulo 1 — Sesión Práctica"
-              oninput="onSpaceOrAttendeesChange(false)"
-              required
+              type="search"
+              id="dbSearchInput"
+              class="filter-input"
+              placeholder="🔍 Buscar en base de datos..."
+              oninput="renderDatabaseView()"
             />
+            <select id="dbStatusFilter" class="filter-input" onchange="renderDatabaseView()">
+              <option value="ALL">Todos los estados</option>
+              <option value="ACTIVA">✅ Válida / Activa</option>
+              <option value="BLOQUEADA_SEGURIDAD">🔴 Bloqueada por Seguridad</option>
+              <option value="CANCELADA">⚪ Liberada</option>
+            </select>
+            <button type="button" class="btn-icon-text" onclick="exportReportCSV()">📥 Exportar CSV</button>
           </div>
-
-          <div class="form-group">
-            <label for="bookingDate">5. Fecha (Haz clic en el calendario o elige aquí)</label>
-            <input type="date" id="bookingDate" value="2026-10-16" onchange="selectDate(this.value)" required />
-          </div>
-
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="bookingStart">Hora Inicio</label>
-              <select id="bookingStart" onchange="syncEndHour()">
-                <option value="06:00">06:00 a. m.</option>
-                <option value="07:00">07:00 a. m.</option>
-                <option value="08:00">08:00 a. m.</option>
-                <option value="09:00">09:00 a. m.</option>
-                <option value="10:00">10:00 a. m.</option>
-                <option value="11:00">11:00 a. m.</option>
-                <option value="12:00">12:00 p. m.</option>
-                <option value="13:00">01:00 p. m.</option>
-                <option value="14:00" selected>02:00 p. m.</option>
-                <option value="15:00">03:00 p. m.</option>
-                <option value="16:00">04:00 p. m.</option>
-                <option value="17:00">05:00 p. m.</option>
-                <option value="18:00">06:00 p. m.</option>
-                <option value="19:00">07:00 p. m.</option>
-                <option value="20:00">08:00 p. m.</option>
-                <option value="21:00">09:00 p. m.</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="bookingEnd">Hora Fin</label>
-              <select id="bookingEnd">
-                <option value="07:00">07:00 a. m.</option>
-                <option value="08:00">08:00 a. m.</option>
-                <option value="09:00">09:00 a. m.</option>
-                <option value="10:00">10:00 a. m.</option>
-                <option value="11:00">11:00 a. m.</option>
-                <option value="12:00">12:00 p. m.</option>
-                <option value="13:00">01:00 p. m.</option>
-                <option value="14:00">02:00 p. m.</option>
-                <option value="15:00">03:00 p. m.</option>
-                <option value="16:00" selected>04:00 p. m.</option>
-                <option value="17:00">05:00 p. m.</option>
-                <option value="18:00">06:00 p. m.</option>
-                <option value="19:00">07:00 p. m.</option>
-                <option value="20:00">08:00 p. m.</option>
-                <option value="21:00">09:00 p. m.</option>
-                <option value="22:00">10:00 p. m.</option>
-              </select>
-            </div>
-          </div>
-
-          <button type="submit" id="btnSubmitBooking" class="btn-submit">
-            Guardar Reserva en Calendario
-          </button>
-        </fieldset>
-      </form>
-
-      <output id="auditBox" class="audit-output" style="display: none;"></output>
-    </aside>
-  </main>
-
-  <!-- ====================================================================== -->
-  <!-- VISTA 2: BASE DE DATOS EN TIEMPO REAL Y ANALÍTICA DE RESERVAS          -->
-  <!-- ====================================================================== -->
-  <main id="view-database" class="portal-secondary-view">
-    <div class="db-analytics-row">
-      <section class="card-panel">
-        <header class="card-header">
-          <h2>Capacidad y Ocupación por Salón</h2>
-        </header>
-        <div id="spaceAnalyticsBars" class="bars-stack"></div>
-      </section>
-
-      <section class="card-panel">
-        <header class="card-header">
-          <h2>Resumen de Base de Datos</h2>
-        </header>
-        <div id="securityStatsSummary" class="stats-grid-4"></div>
-      </section>
-    </div>
-
-    <section class="card-panel">
-      <header class="card-header">
-        <h2>Registros Sincronizados de Reservas y Auditoría</h2>
-        <div class="db-filter-controls">
-          <input
-            type="search"
-            id="dbSearchInput"
-            placeholder="🔍 Buscar salón, responsable o actividad..."
-            oninput="renderDatabaseView()"
-          />
-          <select id="dbStatusFilter" onchange="renderDatabaseView()">
-            <option value="ALL">Todos los registros</option>
-            <option value="ACTIVA">✅ Activas / En Calendario</option>
-            <option value="BLOQUEADA_SEGURIDAD">🔴 Bloqueadas por Seguridad</option>
-            <option value="CANCELADA">⚪ Liberadas</option>
-          </select>
         </div>
-      </header>
 
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>SALÓN</th>
-              <th>ESTADO</th>
-              <th>RESPONSABLE</th>
-              <th>ACTIVIDAD</th>
-              <th>FECHA Y HORA</th>
-              <th>PERSONAS</th>
-              <th>SEGURIDAD</th>
-              <th>ACCIÓN</th>
-            </tr>
-          </thead>
-          <tbody id="dbTableBody"></tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="db-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>SALÓN</th>
+                <th>RESPONSABLE</th>
+                <th>ACTIVIDAD</th>
+                <th>HORARIO</th>
+                <th>PERSONAS</th>
+                <th>RIESGO</th>
+                <th>ESTADO</th>
+                <th>OBSERVACIÓN</th>
+                <th>ACCIÓN</th>
+              </tr>
+            </thead>
+            <tbody id="dbTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- ==================================================================== -->
+    <!-- VISTA 3: PROBLEMAS DE INSTALACIÓN Y SEGURIDAD                        -->
+    <!-- ==================================================================== -->
+    <main id="view-security" class="view-pane">
+      <div class="security-workspace">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Salones con Problemas de Instalación o Alertas Activas</h2>
+            <div class="legend-inline">
+              <span><i class="dot red"></i> Crítica</span>
+              <span><i class="dot amber"></i> Media</span>
+              <span><i class="dot green"></i> Baja</span>
+            </div>
+          </div>
+          <div id="incidentsList" class="incidents-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Reportar Problema en la Instalación</h2>
+            <span class="tag-shield">Alerta Automática</span>
+          </div>
+
+          <form id="incidentForm" class="clean-form" onsubmit="submitIncident(event)">
+            <div class="field">
+              <label for="incidentTargetId">Salón con la Falla</label>
+              <select id="incidentTargetId" required>
+                <option value="SP-CORVUS">Auditorio Corvus</option>
+                <option value="SP-HOUSTON">Sala Comando Houston</option>
+                <option value="SP-APOLO">Nave Apolo</option>
+                <option value="SP-ARTEMIS">Nave Artemis</option>
+                <option value="SP-SPUTNIK">Nave Sputnik</option>
+                <option value="SP-SER-01">Sala del Ser &amp; Inglés</option>
+                <option value="SP-HUNTERS-01">Cabina Review #1</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="incidentTitle">Problema Técnico Detectado</label>
+              <input type="text" id="incidentTitle" placeholder="Ej: Falla en tablero eléctrico o aire averiado" required />
+            </div>
+            <div class="field">
+              <label for="incidentDesc">Descripción del Riesgo</label>
+              <textarea id="incidentDesc" rows="3" placeholder="Detalla la falla para bloquear o alertar al reservar este salón..." required></textarea>
+            </div>
+            <button type="submit" id="btnSubmitIncident" class="btn-primary danger">
+              Registrar Alerta en este Salón
+            </button>
+          </form>
+        </section>
       </div>
-    </section>
-  </main>
+    </main>
+  </div>
 
-  <!-- ====================================================================== -->
-  <!-- VISTA 3: PROBLEMAS DE INSTALACIÓN Y SEGURIDAD EN SALONES               -->
-  <!-- ====================================================================== -->
-  <main id="view-security" class="portal-secondary-view">
-    <div class="security-split">
-      <section class="card-panel">
-        <header class="card-header">
-          <h2>Salones con Problemas de Instalación o Alertas</h2>
-        </header>
-        <div id="incidentsList" class="incidents-stack"></div>
-      </section>
-
-      <section class="card-panel">
-        <header class="card-header">
-          <h2>Reportar Falla o Riesgo en un Salón</h2>
-        </header>
-        <form id="incidentForm" class="booking-form" onsubmit="submitIncident(event)">
-          <div class="form-group">
-            <label for="incidentTargetId">Salón Afectado</label>
-            <select id="incidentTargetId" required></select>
-          </div>
-          <div class="form-group">
-            <label for="incidentTitle">Problema en la Instalación</label>
-            <input type="text" id="incidentTitle" placeholder="Ej: Falla eléctrica o aire acondicionado averiado" required />
-          </div>
-          <div class="form-group">
-            <label for="incidentDesc">Detalle Técnico</label>
-            <textarea id="incidentDesc" rows="3" placeholder="Describe el problema para avisar al intentar reservar este salón..." required></textarea>
-          </div>
-          <button type="submit" id="btnSubmitIncident" class="btn-submit danger">
-            Activar Alerta en este Salón
-          </button>
-        </form>
-      </section>
+  <!-- PANEL DESPLEGABLE DEL ASISTENTE PYTHON -->
+  <aside id="chatDrawer" class="chat-drawer" aria-label="Asistente de Salones">
+    <div class="chat-head">
+      <div class="chat-head-title">
+        <img src="/assets/casco_azul.svg" alt="Asistente" class="chat-helmet" />
+        <div>
+          <strong>Asistente Campuslands (Python Core)</strong>
+          <span>Consulta horarios, disponibilidad y aforos</span>
+        </div>
+      </div>
+      <button type="button" class="btn-close" onclick="toggleChat()">✕</button>
     </div>
-  </main>
 
-  <!-- ====================================================================== -->
-  <!-- ASISTENTE CONFIGURADO EN PYTHON (PANEL LATERAL PLEGABLE)               -->
-  <!-- ====================================================================== -->
-  <aside id="chatDrawer" class="assistant-drawer" aria-label="Asistente en Python">
-    <header class="assistant-header">
-      <div>
-        <strong>Asistente Operativo (Motor Python)</strong>
-        <small>Consulta horarios, salones libres y capacidades</small>
-      </div>
-      <button type="button" class="btn-close-drawer" onclick="toggleChatDrawer()">✕</button>
-    </header>
-
-    <div class="assistant-quick-questions">
-      <button type="button" onclick="askAssistant('¿Qué aulas están libres a las 3 de la tarde?')">
+    <div class="chat-chips">
+      <button type="button" onclick="askQuick('¿Qué aulas están libres a las 3 de la tarde?')">
         ¿Aulas libres a las 3 PM?
       </button>
-      <button type="button" onclick="askAssistant('¿Qué salones tienen problemas en la instalación?')">
+      <button type="button" onclick="askQuick('¿Qué salones tienen problemas de instalación o bloqueo?')">
         ¿Salones con problemas?
       </button>
-      <button type="button" onclick="askAssistant('¿Cuál es la capacidad de cada salón?')">
+      <button type="button" onclick="askQuick('¿Cuál es la capacidad de cada salón?')">
         ¿Capacidad por salón?
       </button>
-      <button type="button" onclick="askAssistant('¿Qué reservas hay activas?')">
-        ¿Reservas activas?
-      </button>
     </div>
 
-    <div id="chatMessages" class="assistant-messages">
-      <article class="msg-bubble bot">
-        Hola. Estoy conectado al motor analítico en <strong>Python</strong> (<code>src/assistant_engine.py</code>). Pregúntame qué salones están libres a cualquier hora, cuáles están ocupados o si algún espacio presenta problemas de instalación.
-      </article>
+    <div id="chatMessages" class="chat-messages">
+      <div class="bubble bot">
+        Hola. Estoy conectado al motor de <strong>Python</strong>. Pregúntame qué salones están libres a cualquier hora, cuáles están ocupados o si algún espacio presenta problemas de instalación.
+      </div>
     </div>
 
-    <form class="assistant-input-row" onsubmit="submitAssistantChat(event)">
-      <input
-        type="text"
-        id="chatInput"
-        placeholder="Ej: ¿Qué aulas están libres a las 3 de la tarde?"
-        autocomplete="off"
-      />
-      <button type="submit" id="btnSendChat">Consultar</button>
+    <form class="chat-form" onsubmit="submitChat(event)">
+      <input type="text" id="chatInput" placeholder="¿Qué aulas están libres a las 3 de la tarde?" autocomplete="off" />
+      <button type="submit" id="btnSendChat">Enviar</button>
     </form>
   </aside>
+
+  <!-- Botón Flotante para abrir el Asistente en cualquier momento -->
+  <button type="button" class="chat-fab" onclick="toggleChat()" title="Consultar al Asistente">
+    <img src="/assets/casco_azul.svg" alt="" />
+    <span>Asistente</span>
+  </button>
 
   <script src="/app.js"></script>
 </body>
