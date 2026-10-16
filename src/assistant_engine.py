@@ -146,7 +146,7 @@ def call_gemini_from_python(question, state, target_date, env_vars):
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": 0.2,
-            "maxOutputTokens": 380
+            "maxOutputTokens": 1200
         }
     }
 

@@ -1,19 +1,18 @@
 /* ==========================================================================
-   PORTAL ESPACIOS CAMPUSLANDS — CONTROLADOR FRONTEND ROBUSTO Y SEGURO
-   Calendario Semanal Integrado • Selector Confiable • Motor Python y Local
+   PORTAL ESPACIOS CAMPUSLANDS — CONTROLADOR FRONTEND (OFICIAL CAMPUSLANDS)
    ========================================================================== */
 
 let appData = {
   rulesConfig: {},
   state: {
     spaces: [
-      { id: "SP-APOLO", name: "Nave Apolo", capacity: 35, status: "DISPONIBLE", zone: "Nivel 1 • Norte", color: "#EAB308" },
-      { id: "SP-ARTEMIS", name: "Nave Artemis", capacity: 30, status: "DISPONIBLE", zone: "Nivel 1 • Centro", color: "#38BDF8" },
-      { id: "SP-SPUTNIK", name: "Nave Sputnik", capacity: 40, status: "DISPONIBLE", zone: "Nivel 1 • Sur", color: "#10B981" },
-      { id: "SP-SER-01", name: "Sala del Ser & Inglés", capacity: 20, status: "DISPONIBLE", zone: "Nivel 2 • Este", color: "#F43F5E" },
-      { id: "SP-HUNTERS-01", name: "Cabina Review #1", capacity: 6, status: "DISPONIBLE", zone: "Nivel 2 • Evaluaciones", color: "#A855F7" },
-      { id: "SP-CORVUS", name: "Auditorio Corvus", capacity: 80, status: "BLOQUEADO_SEGURIDAD", zone: "Planta Central", color: "#EF4444", lockReason: "Falla eléctrica en rack principal" },
-      { id: "SP-HOUSTON", name: "Sala Comando Houston", capacity: 14, status: "MANTENIMIENTO", zone: "Nivel 2 • Dirección", color: "#F59E0B", lockReason: "Reparación de ducto de aire y nodo de red" }
+      { id: "SP-APOLO", name: "Nave Apolo", capacity: 35, status: "DISPONIBLE", zone: "Nivel 1 • Norte", color: "#EAB308", lockReason: null },
+      { id: "SP-ARTEMIS", name: "Nave Artemis", capacity: 30, status: "DISPONIBLE", zone: "Nivel 1 • Centro", color: "#38BDF8", lockReason: null },
+      { id: "SP-SPUTNIK", name: "Nave Sputnik", capacity: 40, status: "DISPONIBLE", zone: "Nivel 1 • Sur", color: "#10B981", lockReason: null },
+      { id: "SP-SER-01", name: "Sala del Ser & Inglés", capacity: 20, status: "DISPONIBLE", zone: "Nivel 2 • Este", color: "#F43F5E", lockReason: null },
+      { id: "SP-HUNTERS-01", name: "Cabina Review #1", capacity: 6, status: "DISPONIBLE", zone: "Nivel 2 • Evaluaciones", color: "#A855F7", lockReason: null },
+      { id: "SP-CORVUS", name: "Auditorio Corvus", capacity: 80, status: "DISPONIBLE", zone: "Planta Central", color: "#EF4444", lockReason: null },
+      { id: "SP-HOUSTON", name: "Sala Comando Houston", capacity: 14, status: "DISPONIBLE", zone: "Nivel 2 • Dirección", color: "#F59E0B", lockReason: null }
     ],
     bookings: [],
     incidents: []
@@ -34,14 +33,14 @@ const WEEK_DAYS = [
 ];
 
 const SCHEDULE_HOURS = [
-  { hhmm: "06:00", label: "6:00 a. m." },
-  { hhmm: "08:00", label: "8:00 a. m." },
-  { hhmm: "10:00", label: "10:00 a. m." },
-  { hhmm: "12:00", label: "12:00 p. m." },
-  { hhmm: "14:00", label: "2:00 p. m." },
-  { hhmm: "16:00", label: "4:00 p. m." },
-  { hhmm: "18:00", label: "6:00 p. m." },
-  { hhmm: "20:00", label: "8:00 p. m." }
+  { hhmm: "06:00", label: "06:00" },
+  { hhmm: "08:00", label: "08:00" },
+  { hhmm: "10:00", label: "10:00" },
+  { hhmm: "12:00", label: "12:00" },
+  { hhmm: "14:00", label: "14:00" },
+  { hhmm: "16:00", label: "16:00" },
+  { hhmm: "18:00", label: "18:00" },
+  { hhmm: "20:00", label: "20:00" }
 ];
 
 function escapeHtml(val) {
@@ -79,11 +78,11 @@ function showToast(msg, type = "success") {
 function showBanner(msg, type = "success") {
   const banner = document.getElementById("feedbackBanner");
   if (!banner) return;
-  banner.className = `feedback-bar ${type}`;
+  banner.className = `feedback-banner ${type}`;
   banner.style.display = "flex";
   banner.innerHTML = `
     <span>${type === "error" ? "🚨" : "✅"} ${escapeHtml(msg)}</span>
-    <button type="button" class="btn-mini" onclick="this.parentElement.style.display='none'">✕</button>
+    <button type="button" class="btn-top-action" style="padding: 2px 8px; font-size: 0.7rem;" onclick="this.parentElement.style.display='none'">✕</button>
   `;
 }
 
@@ -92,31 +91,40 @@ function setLoader(visible, text) {
   if (!loader) return;
   if (visible) {
     document.getElementById("loaderText").textContent =
-      text || "Cargando... Verificando disponibilidad y condiciones de seguridad...";
+      text || "Verificando disponibilidad y condiciones de seguridad...";
     loader.style.display = "flex";
   } else {
     loader.style.display = "none";
   }
 }
 
+// CAMBIO DE VISTAS (SIDEBAR)
 function switchView(viewId) {
-  document.querySelectorAll(".view-pane").forEach((el) => {
+  document.querySelectorAll(".view-panel").forEach((el) => {
     el.classList.toggle("active", el.id === viewId);
   });
-  document.querySelectorAll(".nav-pill").forEach((btn) => {
+  document.querySelectorAll(".sidebar-link").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.view === viewId);
   });
+
+  if (viewId === "view-calendar") {
+    renderExpandedCalendar();
+  }
+  if (viewId === "view-assistant") {
+    setTimeout(() => document.getElementById("assistantInput")?.focus(), 100);
+  }
 }
 
+// CARGA DE ESTADO EN TIEMPO REAL
 async function loadState() {
   try {
     const res = await fetch("/api/state");
     const data = await res.json();
-    if (data.ok) {
+    if (data.ok && data.state) {
       appData = data;
     }
   } catch (err) {
-    console.warn("Usando datos locales sincronizados:", err);
+    console.warn("Usando estado local inicial:", err);
   } finally {
     renderAll();
   }
@@ -131,6 +139,7 @@ function renderAll() {
   renderSecurityView();
 }
 
+// KPIS REALES Y CONCISOS
 function renderKpis() {
   const spaces = appData.state.spaces || [];
   const bookings = appData.state.bookings || [];
@@ -140,6 +149,7 @@ function renderKpis() {
   const activeBookings = bookings.filter((b) => b.status === "ACTIVA");
   const openIncidents = incidents.filter((i) => i.status === "ABIERTA").length;
   const problemSpaces = spaces.filter((s) => s.status !== "DISPONIBLE").length;
+
   const elFree = document.getElementById("kpiFreeSpaces");
   if (elFree) elFree.textContent = freeSpaces;
   const elTot = document.getElementById("kpiTotalSpaces");
@@ -149,7 +159,7 @@ function renderKpis() {
   const elSec = document.getElementById("kpiSecurityAlerts");
   if (elSec) elSec.textContent = openIncidents + problemSpaces;
   const elBlk = document.getElementById("kpiBlockedRooms");
-  if (elBlk) elBlk.textContent = `${problemSpaces} con novedad`;
+  if (elBlk) elBlk.textContent = `${problemSpaces} salones afectados`;
 
   const dbBadge = document.getElementById("dbCountBadge");
   if (dbBadge) dbBadge.textContent = bookings.length;
@@ -157,10 +167,7 @@ function renderKpis() {
   if (secBadge) secBadge.textContent = openIncidents;
 }
 
-// ==========================================================================
-// FILTROS (TODOS, VÁLIDA / DISPONIBLES, OCUPADO)
-// ==========================================================================
-
+// FILTRADO DE SALONES (TODOS, DISPONIBLES, EN USO)
 function setFilterMode(mode) {
   currentFilterMode = mode;
   document.getElementById("btnModeAll")?.classList.toggle("active", mode === "ALL");
@@ -168,7 +175,6 @@ function setFilterMode(mode) {
   document.getElementById("btnModeOcupado")?.classList.toggle("active", mode === "OCUPADO");
 
   renderSpacesGrid();
-  renderWeeklyScheduleGrid();
 }
 
 function selectCalendarDate(dateStr) {
@@ -189,10 +195,7 @@ function onDateInputChange(dateStr) {
   selectCalendarDate(dateStr);
 }
 
-// ==========================================================================
-// CUADRÍCULA DE SALONES
-// ==========================================================================
-
+// CUADRÍCULA DE LOS 7 SALONES
 function renderSpacesGrid() {
   const grid = document.getElementById("spacesGrid");
   if (!grid) return;
@@ -211,7 +214,7 @@ function renderSpacesGrid() {
   });
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-secondary); font-size: 0.8rem; padding: 10px;">No hay salones en este estado para la fecha seleccionada.</div>`;
+    grid.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.8rem; padding: 12px;">No hay salones en este estado para la fecha seleccionada.</div>`;
     return;
   }
 
@@ -222,13 +225,13 @@ function renderSpacesGrid() {
       const isBusy = roomBookings.length > 0;
       const hasProblem = s.status !== "DISPONIBLE";
 
-      let statusBadge = `<span class="status-badge low">🟢 DISPONIBLE</span>`;
-      let barColor = "var(--prio-low)";
+      let statusBadge = `<span class="status-pill low">🟢 DISPONIBLE</span>`;
+      let barColor = "var(--campus-mint)";
       if (hasProblem) {
-        statusBadge = `<span class="status-badge high">🔴 PROBLEMA</span>`;
-        barColor = "var(--prio-high)";
+        statusBadge = `<span class="status-pill high">🔴 NOVEDAD</span>`;
+        barColor = "var(--campus-red)";
       } else if (isBusy) {
-        statusBadge = `<span class="status-badge info">🔵 EN USO</span>`;
+        statusBadge = `<span class="status-pill info">🔵 EN USO</span>`;
         barColor = "var(--campus-cyan)";
       }
 
@@ -237,26 +240,26 @@ function renderSpacesGrid() {
 
       return `
         <article
-          class="space-card status-${s.status} ${isSelected ? "active-selected" : ""}"
+          class="space-card ${isSelected ? "active-selected" : ""}"
           onclick="selectSpaceFromCard('${s.id}')"
         >
           <div class="space-card-top">
-            <span class="code-pill">${escapeHtml(s.id)}</span>
+            <span class="code-badge">${escapeHtml(s.id)}</span>
             ${statusBadge}
           </div>
 
           <div>
-            <h3 class="space-name">${escapeHtml(s.name)}</h3>
-            <span class="space-meta">${escapeHtml(s.zone)}</span>
+            <h3 class="space-card-name">${escapeHtml(s.name)}</h3>
+            <span class="space-card-zone">${escapeHtml(s.zone)}</span>
           </div>
 
-          <div class="bar-wrap">
-            <div class="bar-labels">
-              <span>Capacidad: <strong>${s.capacity} personas</strong></span>
-              <span>${isBusy ? `${totalPax}/${s.capacity} pax` : "Libre"}</span>
+          <div class="space-card-bar-wrap">
+            <div class="space-card-bar-labels">
+              <span>Cap: <strong>${s.capacity} pax</strong></span>
+              <span>${isBusy ? `${totalPax}/${s.capacity}` : "Libre"}</span>
             </div>
-            <div class="bar-track">
-              <div class="bar-fill" style="width: ${isBusy ? Math.max(15, pct) : 8}%; background: ${barColor};"></div>
+            <div class="space-card-bar-track">
+              <div class="space-card-bar-fill" style="width: ${isBusy ? Math.max(16, pct) : 8}%; background: ${barColor};"></div>
             </div>
           </div>
         </article>
@@ -274,10 +277,7 @@ function selectSpaceFromCard(spaceId) {
   }
 }
 
-// ==========================================================================
-// CALENDARIO SEMANAL INTEGRADO (RECUADRO ANTES VACÍO)
-// ==========================================================================
-
+// CALENDARIO SEMANAL INTEGRADO
 function renderWeeklyScheduleGrid() {
   const grid = document.getElementById("weeklyScheduleGrid");
   if (!grid) return;
@@ -288,14 +288,12 @@ function renderWeeklyScheduleGrid() {
 
   const activeBookings = (appData.state.bookings || []).filter((b) => b.status === "ACTIVA");
 
-  // 1. Encabezados de columnas
   let html = `<div class="grid-corner">HORA</div>`;
   WEEK_DAYS.forEach((d) => {
     const isCur = d.date === currentSelectedDate ? "current-selected-day" : "";
     html += `<div class="grid-day-col-head ${isCur}" onclick="selectCalendarDate('${d.date}')">${d.label}</div>`;
   });
 
-  // 2. Filas de horas (06:00 a 20:00)
   SCHEDULE_HOURS.forEach((h) => {
     const slotMin = toMin(h.hhmm);
     html += `<div class="grid-hour-label">${h.label}</div>`;
@@ -310,8 +308,7 @@ function renderWeeklyScheduleGrid() {
 
       const eventsHtml = dayBookings
         .map((b) => {
-          const room = spaceMap[b.spaceId];
-          const tag = b.bookingTag || (room && room.status !== "DISPONIBLE" ? "RESERVADO" : "OCUPADO");
+          const tag = b.bookingTag || "OCUPADO";
           return `
             <div class="schedule-card-ev tag-${tag}" title="${escapeHtml(b.activityTitle)}">
               <div class="ev-head">
@@ -339,6 +336,13 @@ function renderWeeklyScheduleGrid() {
   grid.innerHTML = html;
 }
 
+function renderExpandedCalendar() {
+  const grid = document.getElementById("calendarViewGrid");
+  if (grid) {
+    grid.innerHTML = document.getElementById("weeklyScheduleGrid")?.innerHTML || "";
+  }
+}
+
 function clickScheduleSlot(dateStr, timeStr) {
   selectCalendarDate(dateStr);
   const startInput = document.getElementById("bookingStart");
@@ -352,57 +356,44 @@ function clickScheduleSlot(dateStr, timeStr) {
   showToast(`Horario seleccionado: ${dateStr} a las ${timeStr}`);
 }
 
-// ==========================================================================
-// CAPACIDAD DINÁMICA SEGÚN SALÓN Y AVISOS AUTOMÁTICOS
-// ==========================================================================
-
+// CAPACIDAD DINÁMICA Y ALERTAS EN VIVO
 function onSpaceOrAttendeesChange(notifyProblem = false) {
   const spaces = appData.state.spaces || [];
   const spaceId = document.getElementById("bookingSpaceId")?.value || "SP-APOLO";
   const attendeesInput = document.getElementById("bookingAttendees");
   const attendees = Number(attendeesInput?.value || 0);
-  const activityText = (document.getElementById("bookingActivity")?.value || "").toLowerCase();
 
   const space = spaces.find((s) => s.id === spaceId) || spaces[0];
   if (!space) return;
 
   const maxAllowed = space.capacity || 35;
 
-  // 1. Actualizar indicador de capacidad en el título
   const capTag = document.getElementById("selectedSpaceCapTag");
   const maxLabel = document.getElementById("attendeesMaxLabel");
-  if (capTag) capTag.textContent = `Capacidad: ${maxAllowed} personas`;
+  if (capTag) capTag.textContent = `Capacidad: ${maxAllowed} pax`;
   if (maxLabel) maxLabel.textContent = `(Máx: ${maxAllowed})`;
 
-  // 2. AVISO AUTOMÁTICO 1: Si el salón tiene problema técnico o riesgo de seguridad
+  // Alerta de problema en instalación
   const secWarnEl = document.getElementById("liveSecurityWarning");
   const hasProblem = space.status !== "DISPONIBLE";
-  const isRiskyText = /ignorar|desactivar|alarma|220v|sobrecarga|minero|cortocircuito|hack/i.test(activityText);
 
   if (secWarnEl) {
     if (hasProblem) {
-      const reason = space.lockReason || "Instalación en mantenimiento o falla eléctrica";
+      const reason = space.lockReason || "Instalación en mantenimiento preventivo";
       secWarnEl.style.display = "block";
       secWarnEl.innerHTML = `
-        <strong>🚨 Problema en Instalación Detectado (${escapeHtml(space.name)}):</strong><br/>
-        Este salón reporta una falla técnica: <em>${escapeHtml(reason)}</em>.<br/>
-        <small style="opacity: 0.9;">Te sugerimos seleccionar un salón habilitado o resolver la alerta en Seguridad.</small>
+        <strong>🚨 Alerta en ${escapeHtml(space.name)}:</strong> ${escapeHtml(reason)}.<br/>
+        <small>Te sugerimos seleccionar otro salón habilitado.</small>
       `;
       if (notifyProblem) {
-        showToast(`⚠️ ${space.name} presenta un problema en la instalación`, "error");
+        showToast(`⚠️ ${space.name} presenta una novedad técnica`, "error");
       }
-    } else if (isRiskyText) {
-      secWarnEl.style.display = "block";
-      secWarnEl.innerHTML = `
-        <strong>🚨 Riesgo de Seguridad Detectado:</strong><br/>
-        La actividad ingresada contiene condiciones de riesgo eléctrico o evasión de protocolos.
-      `;
     } else {
       secWarnEl.style.display = "none";
     }
   }
 
-  // 3. AVISO AUTOMÁTICO 2: Si las personas superan la capacidad del salón
+  // Alerta de exceso de personas
   const capWarnEl = document.getElementById("liveCapacityWarning");
   if (capWarnEl) {
     if (attendees > maxAllowed) {
@@ -412,11 +403,11 @@ function onSpaceOrAttendeesChange(notifyProblem = false) {
       const altBtns =
         alternatives.length > 0
           ? `<div style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap;">
-              <span>Salones con capacidad suficiente:</span>
+              <span>Salones con suficiente cupo:</span>
               ${alternatives
                 .map(
                   (a) =>
-                    `<button type="button" class="btn-mini" onclick="selectSpaceFromCard('${a.id}')">
+                    `<button type="button" class="btn-top-action" style="padding: 2px 8px; font-size: 0.72rem;" onclick="selectSpaceFromCard('${a.id}')">
                       Cambiar a ${escapeHtml(a.name)} (Cap: ${a.capacity})
                     </button>`
                 )
@@ -426,8 +417,8 @@ function onSpaceOrAttendeesChange(notifyProblem = false) {
 
       capWarnEl.style.display = "block";
       capWarnEl.innerHTML = `
-        <strong>⚠️ Exceso de Personal en ${escapeHtml(space.name)}:</strong><br/>
-        Ingresaste <strong>${attendees} personas</strong>, pero la capacidad máxima de este salón es de <strong>${maxAllowed} personas</strong> (te pasas por ${excess}).
+        <strong>⚠️ Exceso de Capacidad en ${escapeHtml(space.name)}:</strong><br/>
+        Ingresaste <strong>${attendees} personas</strong>, pero el cupo máximo es de <strong>${maxAllowed}</strong> (te pasas por ${excess}).
         ${altBtns}
       `;
     } else {
@@ -443,10 +434,7 @@ function setQuickBlock(start, end) {
   if (endInput) endInput.value = end;
 }
 
-// ==========================================================================
-// ENVÍO DE RESERVA
-// ==========================================================================
-
+// PROCESAMIENTO Y ALMACENAMIENTO DE RESERVAS (DESDE CERO)
 async function submitBooking(e) {
   e.preventDefault();
   const btn = document.getElementById("btnSubmitBooking");
@@ -464,7 +452,7 @@ async function submitBooking(e) {
   };
 
   btn.disabled = true;
-  setLoader(true, "Verificando disponibilidad y políticas de seguridad...");
+  setLoader(true, "Registrando reserva y auditando condiciones de seguridad...");
 
   try {
     const res = await fetch("/api/bookings", {
@@ -476,12 +464,12 @@ async function submitBooking(e) {
 
     if (auditBox) {
       auditBox.style.display = "block";
-      auditBox.style.borderColor = data.ok ? "var(--prio-low)" : "var(--prio-high)";
+      auditBox.style.borderColor = data.ok ? "var(--campus-mint)" : "var(--campus-red)";
       auditBox.innerHTML = `
-        <strong style="color: ${data.ok ? "#6EE7B7" : "#FDA4AF"};">
+        <strong style="color: ${data.ok ? "#34D399" : "#FF4757"};">
           ${data.ok ? "✅ Reserva Confirmada" : "🚫 Solicitud Bloqueada"}
         </strong>
-        <p style="margin-top: 4px; color: var(--text-secondary);">${escapeHtml(data.message)}</p>
+        <p style="margin-top: 4px; color: var(--text-muted);">${escapeHtml(data.message)}</p>
       `;
     }
 
@@ -503,10 +491,7 @@ async function submitBooking(e) {
   }
 }
 
-// ==========================================================================
-// BASE DE DATOS Y SEGURIDAD
-// ==========================================================================
-
+// BASE DE DATOS EN VIVO
 function renderDatabaseView() {
   const spaces = appData.state.spaces || [];
   const bookings = appData.state.bookings || [];
@@ -519,13 +504,13 @@ function renderDatabaseView() {
         const totalPax = roomBookings.reduce((sum, b) => sum + (b.attendees || 0), 0);
         const pct = Math.min(100, Math.round((totalPax / s.capacity) * 100));
         return `
-          <div style="display: flex; flex-direction: column; gap: 3px;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.76rem;">
-              <span><strong>${escapeHtml(s.name)}</strong> (Capacidad: ${s.capacity})</span>
-              <span>${roomBookings.length} reserva(s) • ${totalPax}/${s.capacity} pax (${pct}%)</span>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.74rem;">
+              <span><strong>${escapeHtml(s.name)}</strong> (Cupo: ${s.capacity})</span>
+              <span>${roomBookings.length} reserva(s) • ${totalPax}/${s.capacity} pax</span>
             </div>
-            <div class="bar-track">
-              <div class="bar-fill" style="width: ${Math.max(6, pct)}%; background: ${s.color || "var(--campus-cyan)"};"></div>
+            <div style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden;">
+              <div style="height: 100%; width: ${Math.max(6, pct)}%; background: ${s.color || "var(--campus-purple)"}; border-radius: 99px;"></div>
             </div>
           </div>
         `;
@@ -540,10 +525,10 @@ function renderDatabaseView() {
     const cancelled = bookings.filter((b) => b.status === "CANCELADA").length;
 
     summaryEl.innerHTML = `
-      <div class="sec-stat-card"><span class="kpi-title">TOTAL EN BD</span><strong>${bookings.length}</strong></div>
-      <div class="sec-stat-card"><span class="kpi-title">ACTIVAS</span><strong style="color: var(--prio-low);">${active}</strong></div>
-      <div class="sec-stat-card"><span class="kpi-title">BLOQUEOS SEGURIDAD</span><strong style="color: var(--prio-high);">${blocked}</strong></div>
-      <div class="sec-stat-card"><span class="kpi-title">LIBERADAS</span><strong>${cancelled}</strong></div>
+      <div class="sec-stat-card"><span class="kpi-label">TOTAL EN BD</span><strong>${bookings.length}</strong></div>
+      <div class="sec-stat-card"><span class="kpi-label">ACTIVAS</span><strong style="color: var(--campus-mint);">${active}</strong></div>
+      <div class="sec-stat-card"><span class="kpi-label">BLOQUEOS SEGURIDAD</span><strong style="color: var(--campus-red);">${blocked}</strong></div>
+      <div class="sec-stat-card"><span class="kpi-label">LIBERADAS</span><strong>${cancelled}</strong></div>
     `;
   }
 
@@ -562,6 +547,11 @@ function renderDatabaseView() {
     return true;
   });
 
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-dim); padding: 18px;">No hay registros en la base de datos aún.</td></tr>`;
+    return;
+  }
+
   tbody.innerHTML = filtered
     .map((b) => {
       const isAct = b.status === "ACTIVA";
@@ -569,17 +559,17 @@ function renderDatabaseView() {
         <tr>
           <td style="font-family: var(--font-mono);">${escapeHtml(b.id)}</td>
           <td><strong>${escapeHtml(b.spaceName)}</strong></td>
-          <td>${escapeHtml(b.requesterName)} <small style="color: var(--text-secondary);">(${escapeHtml(b.requesterRole || "TRAINER")})</small></td>
+          <td>${escapeHtml(b.requesterName)} <small style="color: var(--text-dim);">(${escapeHtml(b.requesterRole || "TRAINER")})</small></td>
           <td>${escapeHtml(b.activityTitle)}</td>
           <td style="font-family: var(--font-mono); font-size: 0.72rem;">${escapeHtml(b.date)}<br/>${escapeHtml(b.startTime)}–${escapeHtml(b.endTime)}</td>
-          <td>${b.attendees} personas</td>
-          <td><span class="status-badge ${b.riskLevel === "CRITICO" ? "high" : "low"}">${escapeHtml(b.riskLevel || "BAJO")}</span></td>
-          <td><span class="status-badge ${isAct ? "low" : "high"}">${escapeHtml(b.status)}</span></td>
-          <td style="font-size: 0.72rem; color: var(--text-secondary); max-width: 220px;">${escapeHtml(b.securityNote || "Verificado")}</td>
+          <td>${b.attendees} pax</td>
+          <td><span class="status-pill ${b.riskLevel === "CRITICO" ? "high" : "low"}">${escapeHtml(b.riskLevel || "BAJO")}</span></td>
+          <td><span class="status-pill ${isAct ? "low" : "high"}">${escapeHtml(b.status)}</span></td>
+          <td style="font-size: 0.72rem; color: var(--text-muted); max-width: 200px;">${escapeHtml(b.securityNote || "Verificado")}</td>
           <td>
             <div style="display: flex; gap: 4px;">
-              ${isAct ? `<button type="button" class="btn-mini" onclick="cancelBooking('${b.id}')">Liberar</button>` : ""}
-              <button type="button" class="btn-mini" style="color: #FDA4AF;" onclick="deleteBooking('${b.id}')">✕</button>
+              ${isAct ? `<button type="button" class="btn-top-action" style="padding: 2px 6px; font-size: 0.7rem;" onclick="cancelBooking('${b.id}')">Liberar</button>` : ""}
+              <button type="button" class="btn-top-action" style="padding: 2px 6px; font-size: 0.7rem; color: #FDA4AF;" onclick="deleteBooking('${b.id}')">✕</button>
             </div>
           </td>
         </tr>
@@ -596,7 +586,7 @@ async function cancelBooking(bookingId) {
   });
   const data = await res.json();
   if (data.ok) {
-    showToast(data.message);
+    showToast(data.message, "success");
     await loadState();
   }
 }
@@ -609,36 +599,46 @@ async function deleteBooking(bookingId) {
   });
   const data = await res.json();
   if (data.ok) {
-    showToast(data.message);
+    showToast(data.message, "success");
     await loadState();
   }
 }
 
+// VISTA DE SEGURIDAD Y FALLAS
 function renderSecurityView() {
-  const container = document.getElementById("incidentsList");
-  if (!container) return;
-
   const incidents = appData.state.incidents || [];
-  container.innerHTML = incidents
-    .map((inc) => {
-      const cls = inc.severity === "CRITICA" ? "high" : inc.severity === "MEDIA" ? "med" : "low";
-      return `
-        <article class="sec-stat-card" style="gap: 6px;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong>${escapeHtml(inc.targetId)} — ${escapeHtml(inc.title)}</strong>
-            <span class="status-badge ${cls}">${escapeHtml(inc.severity)} (${escapeHtml(inc.status)})</span>
-          </div>
-          <p style="color: var(--text-secondary); font-size: 0.76rem;">${escapeHtml(inc.description)}</p>
-          ${
-            inc.status === "ABIERTA"
-              ? `<button type="button" class="btn-mini" style="color: #34D399; width: fit-content;" onclick="resolveIncident('${inc.id}')">
-                  ✅ Resolver Falla y Habilitar Salón
-                </button>`
-              : `<span style="color: #34D399; font-size: 0.74rem;">✔ Problema resuelto</span>`
-          }
-        </article>
-      `;
-    })
+  const list = document.getElementById("incidentsList");
+  if (!list) return;
+
+  if (incidents.length === 0) {
+    list.innerHTML = `
+      <div style="padding: 20px; text-align: center; color: var(--campus-mint);">
+        <span style="font-size: 1.8rem;">✔</span>
+        <p style="margin-top: 6px; font-size: 0.84rem;">Todas las instalaciones operativas sin novedades activas.</p>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = incidents
+    .map(
+      (inc) => `
+      <article class="sec-stat-card" style="margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <strong>${escapeHtml(inc.title)}</strong>
+          <span class="status-pill high">${escapeHtml(inc.severity)}</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.75rem; margin: 4px 0;">${escapeHtml(inc.description)}</p>
+        ${
+          inc.status === "ABIERTA"
+            ? `<button type="button" class="btn-top-action" style="color: var(--campus-mint); margin-top: 6px;" onclick="resolveIncident('${inc.id}')">
+                ✅ Resolver y Habilitar Salón
+              </button>`
+            : `<span style="color: var(--campus-mint); font-size: 0.74rem;">✔ Resuelto</span>`
+        }
+      </article>
+    `
+    )
     .join("");
 }
 
@@ -650,7 +650,7 @@ async function submitIncident(e) {
     description: document.getElementById("incidentDesc").value
   };
 
-  setLoader(true, "Registrando alerta de instalación...");
+  setLoader(true, "Registrando alerta técnica...");
   try {
     const res = await fetch("/api/incidents", {
       method: "POST",
@@ -660,7 +660,6 @@ async function submitIncident(e) {
     const data = await res.json();
     if (data.ok) {
       showToast(data.message, "error");
-      showBanner(data.message, "error");
       document.getElementById("incidentTitle").value = "";
       document.getElementById("incidentDesc").value = "";
       await loadState();
@@ -684,71 +683,36 @@ async function resolveIncident(incidentId) {
 }
 
 // ==========================================================================
-// ASISTENTE DE SALONES Y EXPORTACIÓN CSV
+// ASISTENTE DE IA DEDICADO (VISTA OFICIAL + MODAL RÁPIDO)
 // ==========================================================================
 
-function exportReportCSV() {
-  window.location.href = "/api/export/csv";
-}
-
-function formatChatReply(text) {
+function formatAssistantReply(text) {
   if (!text) return "";
   let formatted = escapeHtml(text);
-  // Negrita **texto**
   formatted = formatted.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-  // Saltos de línea
   formatted = formatted.replace(/\n/g, "<br/>");
   return formatted;
 }
 
-function toggleChat() {
-  const drawer = document.getElementById("chatDrawer");
-  const backdrop = document.getElementById("chatBackdrop");
-  if (!drawer) return;
-  const isOpen = drawer.classList.toggle("open");
-  if (backdrop) backdrop.style.display = isOpen ? "block" : "none";
-  if (isOpen) {
-    setTimeout(() => document.getElementById("chatInput")?.focus(), 120);
-  }
-}
-
-function askQuick(q) {
-  const drawer = document.getElementById("chatDrawer");
-  if (drawer && !drawer.classList.contains("open")) {
-    toggleChat();
-  }
-  const input = document.getElementById("chatInput");
+function askQuickPrompt(q) {
+  const input = document.getElementById("assistantInput");
   if (input) input.value = q;
-  submitChat(new Event("submit"));
+  submitAssistantChat(new Event("submit"));
 }
 
-function submitQuickChat() {
-  const quickInput = document.getElementById("quickChatInput");
-  const q = (quickInput?.value || "").trim();
-  if (!q) return;
-  quickInput.value = "";
-  const drawer = document.getElementById("chatDrawer");
-  if (drawer && !drawer.classList.contains("open")) {
-    toggleChat();
-  }
-  const input = document.getElementById("chatInput");
-  if (input) input.value = q;
-  submitChat(new Event("submit"));
-}
-
-async function submitChat(e) {
+async function submitAssistantChat(e) {
   if (e && e.preventDefault) e.preventDefault();
-  const input = document.getElementById("chatInput");
-  const msgs = document.getElementById("chatMessages");
-  const btn = document.getElementById("btnSendChat");
+  const input = document.getElementById("assistantInput");
+  const msgs = document.getElementById("assistantViewMessages");
+  const btn = document.getElementById("btnSendAssistant");
   const q = (input?.value || "").trim();
   if (!q) return;
 
   input.value = "";
-  msgs.innerHTML += `<div class="bubble user">${escapeHtml(q)}</div>`;
+  msgs.innerHTML += `<div class="chat-bubble user">${escapeHtml(q)}</div>`;
 
   const loadId = "load-" + Date.now();
-  msgs.innerHTML += `<div id="${loadId}" class="bubble bot">⏳ Pensando con IA... analizando salones y seguridad...</div>`;
+  msgs.innerHTML += `<div id="${loadId}" class="chat-bubble bot">⏳ Pensando con IA (Google Gemini + Python Core)...</div>`;
   msgs.scrollTop = msgs.scrollHeight;
   if (btn) btn.disabled = true;
 
@@ -761,12 +725,8 @@ async function submitChat(e) {
     const data = await res.json();
     const el = document.getElementById(loadId);
     if (el) {
-      const replyHtml = formatChatReply(data.reply || data.message || "Consulta completada.");
-      const badgeHtml =
-        data.engine === "PYTHON_GEMINI_AI"
-          ? `<small style="display:block;margin-top:6px;opacity:0.75;font-size:0.68rem;color:var(--campus-mint);">⚡ Respuesta generada con IA (Google Gemini + Python Core)</small>`
-          : `<small style="display:block;margin-top:6px;opacity:0.75;font-size:0.68rem;color:var(--campus-cyan);">⚡ Motor Analítico en Python</small>`;
-      el.innerHTML = `${replyHtml}${badgeHtml}`;
+      const replyHtml = formatAssistantReply(data.reply || data.message || "Consulta procesada.");
+      el.innerHTML = replyHtml;
     }
   } catch (err) {
     const el = document.getElementById(loadId);
@@ -775,6 +735,10 @@ async function submitChat(e) {
     if (btn) btn.disabled = false;
     msgs.scrollTop = msgs.scrollHeight;
   }
+}
+
+function exportReportCSV() {
+  window.location.href = "/api/export/csv";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
