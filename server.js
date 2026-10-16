@@ -2,7 +2,6 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
-// 1. Carga segura de variables de entorno desde .env (Cero dependencias externas)
 function loadEnvFile() {
   const envPath = path.join(__dirname, ".env");
   if (!fs.existsSync(envPath)) return;
@@ -22,9 +21,13 @@ loadEnvFile();
 const {
   RULES_CONFIG,
   sanitizeCampusDataset,
-  validateSpaceBookingRequest
+  validateSpaceBookingRequest,
+  validateResourceLoanRequest
 } = require("./src/rules");
-const { evaluateBookingSecurityWithGemini } = require("./src/geminiSecurity");
+const {
+  evaluateBookingSecurityWithGemini,
+  triageIncidentWithGemini
+} = require("./src/geminiSecurity");
 
 const PORT = Number(process.env.PORT) || 3000;
 const IS_VERCEL = Boolean(process.env.VERCEL);
@@ -40,9 +43,8 @@ function ensureRuntimeDataFile() {
   }
 }
 
-// Lee y sanitiza el dataset oficial en cada operación
 function getSanitizedState() {
-  loadEnvFile(); // Permite recargar la API Key en caliente si el usuario edita .env sin reiniciar
+  loadEnvFile();
   ensureRuntimeDataFile();
   const rawContent = fs.readFileSync(RUNTIME_DATA_PATH, "utf8");
   const rawJson = JSON.parse(rawContent);
@@ -50,7 +52,6 @@ function getSanitizedState() {
   return { rawJson, cleanData, quarantinedRecords };
 }
 
-// Persiste cambios manteniendo también los registros originales para evidencia
 function saveRawDataset(updatedRawJson) {
   updatedRawJson.metadata = updatedRawJson.metadata || {};
   updatedRawJson.metadata.lastUpdated = new Date().toISOString();
@@ -76,7 +77,7 @@ function parseBody(req) {
       try {
         resolve(JSON.parse(body));
       } catch (err) {
-        reject(new Error("JSON inválido en el cuerpo de la petición"));
+        reject(new Error("JSON inválido en la petición"));
       }
     });
     req.on("error", reject);
@@ -99,9 +100,7 @@ const server = http.createServer(async (req, res) => {
     const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
     const pathname = parsedUrl.pathname;
 
-    // ========================================================================
-    // ENDPOINT 1: GET /api/state -> Estado unificado + Reporte de Sanitización
-    // ========================================================================
+    // GET /api/state
     if (req.method === "GET" && pathname === "/api/state") {
       const { cleanData, quarantinedRecords } = getSanitizedState();
       const apiKey = (process.env.GEMINI_API_KEY || "").trim();
@@ -120,25 +119,18 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // ========================================================================
-    // ENDPOINT 2: POST /api/bookings -> Módulo 1: Crear Reserva con Doble Escudo
-    // (Reglas de Dominio Deterministas + Modelo de Seguridad Gemini IA)
-    // ========================================================================
+    // POST /api/bookings (Módulo 1: Espacios)
     if (req.method === "POST" && pathname === "/api/bookings") {
       const payload = await parseBody(req);
       const { rawJson, cleanData } = getSanitizedState();
 
-      // Paso 1: Ejecutar las 3 Reglas de Negocio de Dominio
       const validationResult = validateSpaceBookingRequest(payload, cleanData);
-
-      // Paso 2: Ejecutar Auditoría del Modelo de Seguridad Gemini IA
       const aiSecurityAudit = await evaluateBookingSecurityWithGemini(
         payload,
         validationResult,
         cleanData
       );
 
-      // Si las reglas deterministas fallaron, rechazar con informe completo y alternativa sugerida
       if (!validationResult.valid) {
         return sendJson(res, 422, {
           ok: false,
@@ -151,12 +143,11 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      // Si las reglas pasaron pero el Modelo de Seguridad Gemini detectó una amenaza crítica
       if (aiSecurityAudit.verdict === "BLOQUEADO_POR_IA") {
         return sendJson(res, 403, {
           ok: false,
           blockedBy: "GEMINI_SECURITY_SHIELD",
-          message: `Escudo Gemini IA bloqueó la solicitud por riesgo de seguridad: ${aiSecurityAudit.summary}`,
+          message: `Bloqueado por Gemini IA: ${aiSecurityAudit.summary}`,
           errors: [
             `Bloqueo Preventivo IA (Riesgo ${aiSecurityAudit.riskLevel}): ${aiSecurityAudit.summary}`,
             ...(aiSecurityAudit.securityFlags || [])
@@ -175,7 +166,6 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      // Paso 3: Persistir reserva aprobada en el dataset oficial
       const newBooking = {
         id: `RES-${Math.floor(100 + Math.random() * 900)}`,
         spaceId: validationResult.space.id,
@@ -198,7 +188,7 @@ const server = http.createServer(async (req, res) => {
 
       return sendJson(res, 201, {
         ok: true,
-        message: `Asignación confirmada en '${validationResult.space.name}' (${newBooking.startTime} - ${newBooking.endTime}).`,
+        message: `Asignación confirmada en '${validationResult.space.name}' (${newBooking.startTime}–${newBooking.endTime}).`,
         booking: newBooking,
         ruleChecks: [
           ...validationResult.ruleChecks,
@@ -213,64 +203,139 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // ========================================================================
-    // ENDPOINT 3: POST /api/bookings/cancel -> Liberar una reserva activa
-    // ========================================================================
+    // POST /api/bookings/cancel
     if (req.method === "POST" && pathname === "/api/bookings/cancel") {
       const { bookingId } = await parseBody(req);
       const { rawJson } = getSanitizedState();
       const target = (rawJson.bookings || []).find((b) => b.id === bookingId);
-      if (!target) {
-        return sendJson(res, 404, { ok: false, message: "Reserva no encontrada." });
-      }
+      if (!target) return sendJson(res, 404, { ok: false, message: "Reserva no encontrada." });
       target.status = "CANCELADA";
       saveRawDataset(rawJson);
-      return sendJson(res, 200, {
-        ok: true,
-        message: `Reserva ${bookingId} liberada correctamente.`
-      });
+      return sendJson(res, 200, { ok: true, message: `Bloque ${bookingId} liberado.` });
     }
 
-    // ========================================================================
-    // ENDPOINT 4: POST /api/spaces/status -> Cambiar estado operativo de un aula
-    // ========================================================================
+    // POST /api/spaces/status
     if (req.method === "POST" && pathname === "/api/spaces/status") {
       const { spaceId, newStatus, lockReason } = await parseBody(req);
       const { rawJson } = getSanitizedState();
       const space = (rawJson.spaces || []).find((s) => s.id === spaceId);
-      if (!space) {
-        return sendJson(res, 404, { ok: false, message: "Espacio no encontrado." });
-      }
+      if (!space) return sendJson(res, 404, { ok: false, message: "Espacio no encontrado." });
       space.status = newStatus;
       space.lockReason =
         newStatus === "DISPONIBLE"
           ? null
-          : lockReason || `Cambio manual de estado a ${newStatus} desde Consola de Seguridad`;
+          : lockReason || `Lockdown manual activado desde Consola`;
+      saveRawDataset(rawJson);
+      return sendJson(res, 200, { ok: true, space });
+    }
+
+    // POST /api/resources/loan (Módulo 2: Préstamo de Equipos TI)
+    if (req.method === "POST" && pathname === "/api/resources/loan") {
+      const payload = await parseBody(req);
+      const { rawJson, cleanData } = getSanitizedState();
+      const validation = validateResourceLoanRequest(payload, cleanData);
+      if (!validation.valid) {
+        return sendJson(res, 422, {
+          ok: false,
+          message: validation.errors[0],
+          errors: validation.errors
+        });
+      }
+      const resItem = (rawJson.resources || []).find((r) => r.id === payload.resourceId);
+      resItem.status = "PRESTADO";
+      resItem.borrowedBy = String(payload.borrowerName).trim();
+      resItem.dueTime = payload.dueTime || "2026-10-16T22:00:00-05:00";
       saveRawDataset(rawJson);
       return sendJson(res, 200, {
         ok: true,
-        message: `Estado de '${space.name}' actualizado a ${newStatus}.`,
-        space
+        message: `Equipo '${resItem.name}' prestado a ${resItem.borrowedBy}.`
       });
     }
 
-    // ========================================================================
-    // ENDPOINT 5: POST /api/reset -> Restaurar datos de fábrica para la Demo
-    // ========================================================================
+    // POST /api/resources/return
+    if (req.method === "POST" && pathname === "/api/resources/return") {
+      const { resourceId } = await parseBody(req);
+      const { rawJson } = getSanitizedState();
+      const resItem = (rawJson.resources || []).find((r) => r.id === resourceId);
+      if (!resItem) return sendJson(res, 404, { ok: false, message: "Equipo no encontrado." });
+      resItem.status = "DISPONIBLE";
+      resItem.borrowedBy = null;
+      resItem.dueTime = null;
+      saveRawDataset(rawJson);
+      return sendJson(res, 200, { ok: true, message: `Equipo '${resItem.name}' devuelto al almacén.` });
+    }
+
+    // POST /api/incidents (Módulo 3: Triaje IA + Auto-Lockdown en Mapa 2D)
+    if (req.method === "POST" && pathname === "/api/incidents") {
+      const payload = await parseBody(req);
+      const { rawJson, cleanData } = getSanitizedState();
+      if (!payload.title || !payload.description || !payload.targetId) {
+        return sendJson(res, 400, { ok: false, message: "Completa título, descripción y salón afectado." });
+      }
+
+      const triage = await triageIncidentWithGemini(payload, cleanData);
+      const newInc = {
+        id: `INC-${Math.floor(100 + Math.random() * 900)}`,
+        title: String(payload.title).trim(),
+        description: String(payload.description).trim(),
+        targetType: "ESPACIO",
+        targetId: payload.targetId,
+        severity: triage.severity,
+        category: triage.category,
+        status: "ABIERTA",
+        aiRecommendation: triage.aiRecommendation,
+        createdAt: new Date().toISOString()
+      };
+
+      rawJson.incidents = rawJson.incidents || [];
+      rawJson.incidents.unshift(newInc);
+
+      // Si Gemini determina bloqueo preventivo o severidad CRÍTICA, bloquea el salón en el Plano 2D
+      if (triage.autoLockTarget || triage.severity === "CRITICA") {
+        const affectedSpace = (rawJson.spaces || []).find((s) => s.id === payload.targetId);
+        if (affectedSpace) {
+          affectedSpace.status = "BLOQUEADO_SEGURIDAD";
+          affectedSpace.lockReason = `${newInc.id}: ${newInc.title}`;
+        }
+      }
+
+      saveRawDataset(rawJson);
+      return sendJson(res, 201, {
+        ok: true,
+        message: `Incidencia clasificada por Gemini IA como ${newInc.severity} (${newInc.category}).`,
+        incident: newInc
+      });
+    }
+
+    // POST /api/incidents/resolve
+    if (req.method === "POST" && pathname === "/api/incidents/resolve") {
+      const { incidentId } = await parseBody(req);
+      const { rawJson } = getSanitizedState();
+      const inc = (rawJson.incidents || []).find((i) => i.id === incidentId);
+      if (!inc) return sendJson(res, 404, { ok: false, message: "Incidencia no encontrada." });
+      inc.status = "RESUELTA";
+
+      const affectedSpace = (rawJson.spaces || []).find((s) => s.id === inc.targetId);
+      if (affectedSpace && affectedSpace.status === "BLOQUEADO_SEGURIDAD") {
+        affectedSpace.status = "DISPONIBLE";
+        affectedSpace.lockReason = null;
+      }
+      saveRawDataset(rawJson);
+      return sendJson(res, 200, { ok: true, message: "Incidencia resuelta y salón rehabilitado." });
+    }
+
+    // POST /api/reset
     if (req.method === "POST" && pathname === "/api/reset") {
       const seedContent = fs.readFileSync(SEED_PATH, "utf8");
       fs.writeFileSync(RUNTIME_DATA_PATH, seedContent, "utf8");
       return sendJson(res, 200, {
         ok: true,
-        message: "Dataset oficial restaurado a su estado inicial de demostración."
+        message: "Dataset oficial restaurado a su estado inicial."
       });
     }
 
-    // ========================================================================
-    // SERVIDOR DE ARCHIVOS ESTÁTICOS (HTML + CSS + JS PURO)
-    // ========================================================================
+    // Archivos estáticos
     let filePath = pathname === "/" ? path.join(PUBLIC_DIR, "index.html") : path.join(PUBLIC_DIR, pathname);
-    // Prevenir Path Traversal
     if (!filePath.startsWith(PUBLIC_DIR)) {
       res.writeHead(403);
       return res.end("Forbidden");
@@ -286,11 +351,8 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("Ruta no encontrada");
   } catch (err) {
-    console.error("Error controlado en servidor:", err);
-    sendJson(res, 500, {
-      ok: false,
-      message: "Excepción controlada en el servidor: " + err.message
-    });
+    console.error("Error controlado:", err);
+    sendJson(res, 500, { ok: false, message: "Error controlado: " + err.message });
   }
 });
 
@@ -303,4 +365,3 @@ if (!IS_VERCEL) {
 module.exports = (req, res) => {
   server.emit("request", req, res);
 };
-

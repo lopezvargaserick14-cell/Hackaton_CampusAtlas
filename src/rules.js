@@ -5,35 +5,33 @@
  * 💡 NOTA PARA EL RETO EN VIVO DEL JURADO (15 PUNTOS - MENOS DE 3 MINUTOS):
  * Todas las constantes y condiciones de dominio están centralizadas aquí.
  * Si el jurado pide cambiar un límite (ej. porcentaje de aforo, mínimo de
- * ocupación, duración máxima o bloqueo por rol), edita RULES_CONFIG abajo.
+ * ocupación, máximo de préstamos o bloqueo por rol), edita RULES_CONFIG abajo.
  * ============================================================================
  */
 
 const RULES_CONFIG = {
-  // Regla 1: Control de Aforo y Capacidad Física
+  // Regla 1 (Módulo 1): Control de Aforo y Capacidad Física
   MAX_CAPACITY_PERCENTAGE: 100, // 100% del aforo máximo permitido
-  MIN_OCCUPANCY_PERCENTAGE: 20, // Mínimo 20% del aforo para evitar subutilización de aulas grandes
-  ENFORCE_MIN_OCCUPANCY_ON_LARGE_ROOMS: true, // Aplica a espacios de más de 15 personas
+  MIN_OCCUPANCY_PERCENTAGE: 20, // Mínimo 20% del aforo para evitar subutilización de salones grandes
+  ENFORCE_MIN_OCCUPANCY_ON_LARGE_ROOMS: true,
   LARGE_ROOM_THRESHOLD: 15,
 
-  // Regla 2: Horarios y No Solapamiento
+  // Regla 2 (Módulo 1): Horarios y Cero Solapamiento
   CAMPUS_OPEN_TIME: "06:00",
   CAMPUS_CLOSE_TIME: "22:00",
-  MAX_BOOKING_DURATION_MINUTES: 240, // Máximo 4 horas seguidas por reserva
+  MAX_BOOKING_DURATION_MINUTES: 240, // Máximo 4 horas seguidas (1 Bloque Campuslands)
   MIN_BOOKING_DURATION_MINUTES: 30,  // Mínimo 30 minutos
 
-  // Regla 3: Seguridad Operativa y Cruce con Incidencias / Mantenimiento
+  // Regla 3 (Cruzada Módulos 1, 2 y 3): Seguridad Operativa e Incidencias Críticas
   ALLOWED_SPACE_STATUSES: ["DISPONIBLE"],
   VALID_SPACE_STATUSES_IN_DATASET: ["DISPONIBLE", "MANTENIMIENTO", "BLOQUEADO_SEGURIDAD"],
   BLOCK_IF_CRITICAL_INCIDENT_OPEN: true,
 
-  // Regla 4 (Módulo 2 conectado): Límite de préstamos activos y bloqueo por mora
-  MAX_ACTIVE_LOANS_PER_USER: 2
+  // Regla 4 (Módulo 2 - Préstamo de Recursos TI): Límite y Mora
+  MAX_ACTIVE_LOANS_PER_USER: 2,
+  BLOCK_LOAN_IF_USER_HAS_OVERDUE: true
 };
 
-/**
- * Convierte una hora "HH:MM" a minutos desde las 00:00 para comparaciones exactas
- */
 function timeToMinutes(timeStr) {
   if (!timeStr || typeof timeStr !== "string" || !/^\d{2}:\d{2}$/.test(timeStr)) {
     return NaN;
@@ -44,18 +42,13 @@ function timeToMinutes(timeStr) {
 }
 
 /**
- * ============================================================================
- * ESCUDO DE INTEGRIDAD DE DATOS (SANITIZACIÓN DE CASOS BORDE DEL DATASET)
- * ============================================================================
- * Filtra registros inconsistentes en los datos de origen sin tumbar el servidor
- * y genera un reporte auditable para mostrar en la interfaz.
+ * Sanitiza el dataset oficial aislando casos borde sin interrumpir el sistema
  */
 function sanitizeCampusDataset(rawData) {
   const quarantinedRecords = [];
   const validSpaces = [];
   const validBookings = [];
 
-  // 1. Sanitizar Espacios
   for (const space of rawData.spaces || []) {
     const issues = [];
     if (!space.id || !space.name || String(space.name).trim() === "") {
@@ -80,7 +73,6 @@ function sanitizeCampusDataset(rawData) {
     }
   }
 
-  // 2. Sanitizar Reservas existentes
   for (const booking of rawData.bookings || []) {
     const issues = [];
     const startMin = timeToMinutes(booking.startTime);
@@ -120,17 +112,12 @@ function sanitizeCampusDataset(rawData) {
 }
 
 /**
- * ============================================================================
- * VALIDACIÓN DE REGLAS DE NEGOCIO - MÓDULO 1: DISPONIBILIDAD Y ASIGNACIÓN DE ESPACIOS
- * ============================================================================
- * Evalúa las reglas de dominio reales y devuelve tanto el resultado como el
- * desglose de cada regla evaluada para mostrar en la UI.
+ * Validación de Reglas de Dominio - Módulo 1 (Espacios)
  */
 function validateSpaceBookingRequest(payload, currentState) {
   const {
     spaceId,
     requesterName,
-    requesterRole,
     activityTitle,
     attendees,
     date,
@@ -141,7 +128,6 @@ function validateSpaceBookingRequest(payload, currentState) {
   const ruleChecks = [];
   const errors = [];
 
-  // Validación básica de entrada
   if (!spaceId || !requesterName || !activityTitle || !date || !startTime || !endTime) {
     return {
       valid: false,
@@ -156,15 +142,12 @@ function validateSpaceBookingRequest(payload, currentState) {
     return {
       valid: false,
       code: "ESPACIO_NO_EXISTE",
-      errors: [`El espacio con ID '${spaceId}' no existe o fue aislado por inconsistencia de datos.`],
+      errors: [`El salón '${spaceId}' no existe o está en cuarentena.`],
       ruleChecks: []
     };
   }
 
-  // --------------------------------------------------------------------------
-  // REGLA DE DOMINIO 1: SALUD OPERATIVA Y BLOQUEO DE SEGURIDAD CRUZADO
-  // Prohibido asignar espacios en mantenimiento o con incidentes críticos activos
-  // --------------------------------------------------------------------------
+  // RN-01: Salud Operativa y Cruce de Incidencias
   const activeCriticalIncident = (currentState.incidents || []).find(
     (inc) =>
       inc.targetType === "ESPACIO" &&
@@ -178,29 +161,26 @@ function validateSpaceBookingRequest(payload, currentState) {
 
   if (!isStatusAllowed || blockedByIncident) {
     const reason = activeCriticalIncident
-      ? `Bloqueo de Seguridad Activo por incidencia crítica [${activeCriticalIncident.id}]: "${activeCriticalIncident.title}".`
-      : `El espacio '${space.name}' se encuentra en estado '${space.status}' (${space.lockReason || "No habilitado para asignación"}).`;
+      ? `Lockdown de Seguridad por incidencia crítica [${activeCriticalIncident.id}]: "${activeCriticalIncident.title}".`
+      : `El espacio '${space.name}' está en estado '${space.status}' (${space.lockReason || "No habilitado"}).`;
 
     errors.push(reason);
     ruleChecks.push({
       ruleId: "RN-01",
-      ruleName: "Seguridad Operativa y Cruce de Incidencias",
+      ruleName: "Salud Operativa y Cruce de Incidencias",
       passed: false,
       detail: reason
     });
   } else {
     ruleChecks.push({
       ruleId: "RN-01",
-      ruleName: "Seguridad Operativa y Cruce de Incidencias",
+      ruleName: "Salud Operativa y Cruce de Incidencias",
       passed: true,
-      detail: `Espacio '${space.name}' operativo y sin incidentes críticos abiertos.`
+      detail: `'${space.name}' operativo y sin incidentes críticos abiertos.`
     });
   }
 
-  // --------------------------------------------------------------------------
-  // REGLA DE DOMINIO 2: CONTROL ESTRICTO DE AFORO Y OPTIMIZACIÓN DE CAPACIDAD
-  // Evita sobrecupo físico (riesgo de seguridad) y subutilización extrema
-  // --------------------------------------------------------------------------
+  // RN-02: Control Estricto de Aforo
   const numAttendees = Number(attendees);
   const maxAllowedAttendees = Math.floor((space.capacity * RULES_CONFIG.MAX_CAPACITY_PERCENTAGE) / 100);
   const minRequiredAttendees =
@@ -209,28 +189,28 @@ function validateSpaceBookingRequest(payload, currentState) {
       : 1;
 
   if (isNaN(numAttendees) || numAttendees <= 0) {
-    errors.push("El número de asistentes debe ser mayor a 0.");
+    errors.push("El número de campers debe ser mayor a 0.");
     ruleChecks.push({
       ruleId: "RN-02",
-      ruleName: "Seguridad de Aforo y Capacidad del Espacio",
+      ruleName: "Seguridad de Aforo y Capacidad",
       passed: false,
       detail: "Cantidad de asistentes inválida."
     });
   } else if (numAttendees > maxAllowedAttendees) {
-    const msg = `Conflicto de Aforo (Riesgo de Sobrecupo): Solicitas espacio para ${numAttendees} personas, pero '${space.name}' tiene un límite seguro de ${maxAllowedAttendees} personas.`;
+    const msg = `Sobrecupo de Aforo: Solicitas ${numAttendees} personas, pero '${space.name}' permite máximo ${maxAllowedAttendees}.`;
     errors.push(msg);
     ruleChecks.push({
       ruleId: "RN-02",
-      ruleName: "Seguridad de Aforo y Capacidad del Espacio",
+      ruleName: "Seguridad de Aforo y Capacidad",
       passed: false,
       detail: msg
     });
   } else if (numAttendees < minRequiredAttendees) {
-    const msg = `Subutilización de Espacio: '${space.name}' tiene capacidad para ${space.capacity} personas y exige mínimo ${minRequiredAttendees} asistentes (${RULES_CONFIG.MIN_OCCUPANCY_PERCENTAGE}%). Usa un Cubículo para grupos pequeños.`;
+    const msg = `Subutilización de Salón: '${space.name}' (Cap: ${space.capacity}) exige mínimo ${minRequiredAttendees} asistentes (${RULES_CONFIG.MIN_OCCUPANCY_PERCENTAGE}%). Usa una Cabina Hunters.`;
     errors.push(msg);
     ruleChecks.push({
       ruleId: "RN-02",
-      ruleName: "Seguridad de Aforo y Capacidad del Espacio",
+      ruleName: "Seguridad de Aforo y Capacidad",
       passed: false,
       detail: msg
     });
@@ -238,27 +218,24 @@ function validateSpaceBookingRequest(payload, currentState) {
     const occupancyPct = Math.round((numAttendees / space.capacity) * 100);
     ruleChecks.push({
       ruleId: "RN-02",
-      ruleName: "Seguridad de Aforo y Capacidad del Espacio",
+      ruleName: "Seguridad de Aforo y Capacidad",
       passed: true,
-      detail: `Aforo verificado: ${numAttendees}/${space.capacity} asistentes (${occupancyPct}% de ocupación segura).`
+      detail: `Aforo seguro: ${numAttendees}/${space.capacity} campers (${occupancyPct}% ocupación).`
     });
   }
 
-  // --------------------------------------------------------------------------
-  // REGLA DE DOMINIO 3: NO SOLAPAMIENTO HORARIO Y VENTANA OPERATIVA DEL CAMPUS
-  // Verifica colisiones de horario [inicioA < finB && finA > inicioB]
-  // --------------------------------------------------------------------------
+  // RN-03: No Solapamiento Horario
   const reqStart = timeToMinutes(startTime);
   const reqEnd = timeToMinutes(endTime);
   const openMin = timeToMinutes(RULES_CONFIG.CAMPUS_OPEN_TIME);
   const closeMin = timeToMinutes(RULES_CONFIG.CAMPUS_CLOSE_TIME);
 
   if (isNaN(reqStart) || isNaN(reqEnd) || reqEnd <= reqStart) {
-    const msg = `Rango de horas inválido (${startTime} a ${endTime}). La hora de fin debe ser posterior a la de inicio.`;
+    const msg = `Rango horario inválido (${startTime} a ${endTime}).`;
     errors.push(msg);
     ruleChecks.push({
       ruleId: "RN-03",
-      ruleName: "Integridad Horaria y Cero Solapamiento",
+      ruleName: "Cero Solapamiento Horario",
       passed: false,
       detail: msg
     });
@@ -272,43 +249,42 @@ function validateSpaceBookingRequest(payload, currentState) {
     });
 
     if (reqStart < openMin || reqEnd > closeMin) {
-      const msg = `Fuera de horario del campus: Campuslands opera entre ${RULES_CONFIG.CAMPUS_OPEN_TIME} y ${RULES_CONFIG.CAMPUS_CLOSE_TIME}.`;
+      const msg = `Fuera de jornada Campuslands (${RULES_CONFIG.CAMPUS_OPEN_TIME} - ${RULES_CONFIG.CAMPUS_CLOSE_TIME}).`;
       errors.push(msg);
       ruleChecks.push({
         ruleId: "RN-03",
-        ruleName: "Integridad Horaria y Cero Solapamiento",
+        ruleName: "Cero Solapamiento Horario",
         passed: false,
         detail: msg
       });
     } else if (duration > RULES_CONFIG.MAX_BOOKING_DURATION_MINUTES || duration < RULES_CONFIG.MIN_BOOKING_DURATION_MINUTES) {
-      const msg = `Duración no permitida (${duration} min): Las reservas deben durar entre ${RULES_CONFIG.MIN_BOOKING_DURATION_MINUTES} y ${RULES_CONFIG.MAX_BOOKING_DURATION_MINUTES} minutos.`;
+      const msg = `Duración (${duration} min) fuera del rango permitido (${RULES_CONFIG.MIN_BOOKING_DURATION_MINUTES}-${RULES_CONFIG.MAX_BOOKING_DURATION_MINUTES} min).`;
       errors.push(msg);
       ruleChecks.push({
         ruleId: "RN-03",
-        ruleName: "Integridad Horaria y Cero Solapamiento",
+        ruleName: "Cero Solapamiento Horario",
         passed: false,
         detail: msg
       });
     } else if (overlappingBooking) {
-      const msg = `Conflicto de Horario (Solapamiento): '${space.name}' ya está reservada de ${overlappingBooking.startTime} a ${overlappingBooking.endTime} por ${overlappingBooking.requesterName} ("${overlappingBooking.activityTitle}").`;
+      const msg = `Choque de Horario: '${space.name}' ya está ocupado de ${overlappingBooking.startTime} a ${overlappingBooking.endTime} por ${overlappingBooking.requesterName}.`;
       errors.push(msg);
       ruleChecks.push({
         ruleId: "RN-03",
-        ruleName: "Integridad Horaria y Cero Solapamiento",
+        ruleName: "Cero Solapamiento Horario",
         passed: false,
         detail: msg
       });
     } else {
       ruleChecks.push({
         ruleId: "RN-03",
-        ruleName: "Integridad Horaria y Cero Solapamiento",
+        ruleName: "Cero Solapamiento Horario",
         passed: true,
-        detail: `Franja ${startTime} - ${endTime} (${duration} min) libre de colisiones en ${date}.`
+        detail: `Bloque ${startTime}–${endTime} (${duration} min) libre de colisiones.`
       });
     }
   }
 
-  // Si hubo algún bloqueo o conflicto, calculamos sugerencias automáticas de espacios alternativos
   const alternativeSpaces = !errors.length
     ? []
     : findAlternativeSpaces(currentState, numAttendees, date, reqStart, reqEnd, space.id);
@@ -323,9 +299,6 @@ function validateSpaceBookingRequest(payload, currentState) {
   };
 }
 
-/**
- * Busca espacios alternativos válidos cuando una reserva falla por aforo, bloqueo o solapamiento
- */
 function findAlternativeSpaces(currentState, attendees, date, reqStart, reqEnd, excludeSpaceId) {
   const numAttendees = Number(attendees) || 1;
   return (currentState.spaces || [])
@@ -360,9 +333,53 @@ function findAlternativeSpaces(currentState, attendees, date, reqStart, reqEnd, 
     }));
 }
 
+/**
+ * Validación de Reglas de Dominio - Módulo 2 (Préstamo de Equipos TI)
+ */
+function validateResourceLoanRequest(payload, currentState) {
+  const { resourceId, borrowerName } = payload;
+  const errors = [];
+
+  const resource = (currentState.resources || []).find((r) => r.id === resourceId);
+  if (!resource) {
+    return { valid: false, errors: ["Recurso tecnológico no encontrado."] };
+  }
+
+  // Regla 1: El equipo debe estar DISPONIBLE y su salón vinculado no puede estar en LOCKDOWN
+  if (resource.status !== "DISPONIBLE") {
+    errors.push(`El recurso '${resource.name}' no está disponible (Estado actual: ${resource.status}).`);
+  }
+  if (resource.assignedSpaceId) {
+    const linkedSpace = (currentState.spaces || []).find((s) => s.id === resource.assignedSpaceId);
+    if (linkedSpace && linkedSpace.status === "BLOQUEADO_SEGURIDAD") {
+      errors.push(`Bloqueo Cruzado: '${resource.name}' pertenece a '${linkedSpace.name}', que está en Lockdown de Seguridad.`);
+    }
+  }
+
+  // Regla 2: Bloqueo por mora o exceso de préstamos simultáneos
+  const cleanBorrower = String(borrowerName || "").trim().toLowerCase();
+  const userLoans = (currentState.resources || []).filter(
+    (r) => r.status === "PRESTADO" && String(r.borrowedBy || "").toLowerCase().includes(cleanBorrower)
+  );
+
+  const hasOverdue = userLoans.some((r) => String(r.borrowedBy || "").toUpperCase().includes("MORA"));
+  if (RULES_CONFIG.BLOCK_LOAN_IF_USER_HAS_OVERDUE && hasOverdue) {
+    errors.push(`Bloqueo por Mora Activa: '${borrowerName}' tiene un equipo vencido sin devolver. Debe entregarlo antes de solicitar otro.`);
+  } else if (userLoans.length >= RULES_CONFIG.MAX_ACTIVE_LOANS_PER_USER) {
+    errors.push(`Límite de Préstamos Superado: '${borrowerName}' ya tiene ${userLoans.length} equipos activos (Máximo permitido: ${RULES_CONFIG.MAX_ACTIVE_LOANS_PER_USER}).`);
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    resource
+  };
+}
+
 module.exports = {
   RULES_CONFIG,
   sanitizeCampusDataset,
   validateSpaceBookingRequest,
+  validateResourceLoanRequest,
   findAlternativeSpaces
 };
