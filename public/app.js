@@ -59,14 +59,53 @@ function toMin(hhmm) {
 
 function saveLocalBookings(bookings) {
   try {
-    localStorage.setItem("campusatlas_bookings", JSON.stringify(bookings));
+    localStorage.setItem("campusatlas_bookings", JSON.stringify(bookings || []));
   } catch (e) {}
 }
 
 function getLocalBookings() {
   try {
     const raw = localStorage.getItem("campusatlas_bookings");
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    const spaces = appData?.state?.spaces || [
+      { id: "SP-APOLO", capacity: 35 },
+      { id: "SP-ARTEMIS", capacity: 30 },
+      { id: "SP-SPUTNIK", capacity: 40 },
+      { id: "SP-SER-01", capacity: 20 },
+      { id: "SP-HUNTERS-01", capacity: 6 },
+      { id: "SP-CORVUS", capacity: 80 },
+      { id: "SP-HOUSTON", capacity: 14 }
+    ];
+    const spaceMap = new Map(spaces.map((s) => [s.id, s]));
+
+    const validBookings = [];
+    for (const b of parsed) {
+      if (!b || !b.id || !b.spaceId || !b.date || !b.startTime || !b.endTime) continue;
+      const sp = spaceMap.get(b.spaceId);
+      // Validar aforo
+      if (sp && (Number(b.attendees) > sp.capacity || Number(b.attendees) < 1)) continue;
+      // Validar orden de horas
+      const bStart = toMin(b.startTime);
+      const bEnd = toMin(b.endTime);
+      if (isNaN(bStart) || isNaN(bEnd) || bEnd <= bStart) continue;
+
+      // Validar que no haya cruce con reservas activas ya admitidas
+      if (b.status === "ACTIVA") {
+        const hasOverlap = validBookings.some((vb) => {
+          if (vb.status !== "ACTIVA" || vb.spaceId !== b.spaceId || vb.date !== b.date) return false;
+          const vbStart = toMin(vb.startTime);
+          const vbEnd = toMin(vb.endTime);
+          return bStart < vbEnd && bEnd > vbStart;
+        });
+        if (hasOverlap) continue;
+      }
+
+      validBookings.push(b);
+    }
+    return validBookings;
   } catch (e) {
     return [];
   }
@@ -131,23 +170,32 @@ function switchView(viewId) {
   }
 }
 
-// CARGA DE ESTADO EN TIEMPO REAL CON RESPALDO LOCAL
+// CARGA DE ESTADO EN TIEMPO REAL CON RESPALDO LOCAL HIGIENIZADO
 async function loadState() {
   try {
     const res = await fetch("/api/state");
     const data = await res.json();
     if (data.ok && data.state) {
       appData = data;
-      // Sincroniza con localStorage para garantizar persistencia incluso en Vercel
+      // Sincroniza reservas de forma segura sin admitir registros con errores
       const local = getLocalBookings();
       if (local && local.length > 0) {
         const idSet = new Set((appData.state.bookings || []).map((b) => b.id));
         local.forEach((b) => {
           if (!idSet.has(b.id)) {
-            appData.state.bookings.push(b);
+            // Verificar que no choque con reservas ya autorizadas
+            const conflict = (appData.state.bookings || []).some((eb) => {
+              if (eb.status !== "ACTIVA" || eb.spaceId !== b.spaceId || eb.date !== b.date) return false;
+              return toMin(b.startTime) < toMin(eb.endTime) && toMin(b.endTime) > toMin(eb.startTime);
+            });
+            if (!conflict) {
+              appData.state.bookings.push(b);
+            }
           }
         });
       }
+      // Asegurar que localStorage quede higienizado
+      saveLocalBookings(appData.state.bookings);
     }
   } catch (err) {
     console.warn("Servidor sin conexión, usando almacenamiento local:", err);
@@ -197,6 +245,29 @@ function renderKpis() {
   if (secBadge) secBadge.textContent = openIncidents;
 }
 
+// MANEJO UNIFICADO DE CLIC EN LAS 3 TARJETAS KPIS SUPERIORES
+function handleKpiCardClick(type) {
+  if (type === "VALIDA") {
+    switchView("view-spaces");
+    setFilterMode("VALIDA");
+    showToast("🟢 Mostrando salones 100% disponibles para reservar", "info");
+  } else if (type === "OCUPADO") {
+    switchView("view-spaces");
+    setFilterMode("OCUPADO");
+    const bookingsToday = (appData.state.bookings || []).filter(
+      (b) => b.status === "ACTIVA" && b.date === currentSelectedDate
+    );
+    if (bookingsToday.length === 0) {
+      showToast(`🔵 No hay salones ocupados en la fecha seleccionada (${currentSelectedDate}).`, "info");
+    } else {
+      showToast(`🔵 Filtrando ${bookingsToday.length} salón(es) en uso para ${currentSelectedDate}`, "info");
+    }
+  } else if (type === "SECURITY") {
+    switchView("view-security");
+    showToast("🔴 Panel de novedades técnicas e incidentes", "info");
+  }
+}
+
 // FILTRADO DE SALONES (TODOS, DISPONIBLES, EN USO)
 function setFilterMode(mode) {
   currentFilterMode = mode;
@@ -244,7 +315,26 @@ function renderSpacesGrid() {
   });
 
   if (filtered.length === 0) {
-    grid.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.8rem; padding: 12px;">No hay salones en este estado para la fecha seleccionada.</div>`;
+    if (currentFilterMode === "OCUPADO") {
+      grid.innerHTML = `
+        <div style="grid-column: 1/-1; background: var(--bg-card-subtle); border: 1px dashed var(--border-subtle); border-radius: 10px; padding: 22px; text-align: center;">
+          <span style="font-size: 2rem;">🎉</span>
+          <p style="margin: 8px 0 4px; color: #FFFFFF; font-weight: 600; font-size: 0.92rem;">No hay salones ocupados el ${currentSelectedDate}</p>
+          <p style="color: var(--text-muted); font-size: 0.76rem; margin-bottom: 12px;">Todos los 7 salones e instalaciones están 100% libres para reservar en esta fecha.</p>
+          <button type="button" class="btn-top-action btn-purple-action" onclick="setFilterMode('ALL')">Ver Todos los Salones</button>
+        </div>
+      `;
+    } else if (currentFilterMode === "VALIDA") {
+      grid.innerHTML = `
+        <div style="grid-column: 1/-1; background: var(--bg-card-subtle); border: 1px dashed var(--border-subtle); border-radius: 10px; padding: 22px; text-align: center;">
+          <span style="font-size: 2rem;">⚠️</span>
+          <p style="margin: 8px 0 4px; color: #FFFFFF; font-weight: 600; font-size: 0.92rem;">No hay salones disponibles en este momento</p>
+          <button type="button" class="btn-top-action" onclick="setFilterMode('ALL')">Ver Todos los Salones</button>
+        </div>
+      `;
+    } else {
+      grid.innerHTML = `<div style="grid-column: 1/-1; color: var(--text-muted); font-size: 0.8rem; padding: 14px; text-align: center;">No hay salones para el filtro seleccionado.</div>`;
+    }
     return;
   }
 
@@ -374,6 +464,7 @@ function renderExpandedCalendar() {
 }
 
 function clickScheduleSlot(dateStr, timeStr) {
+  switchView("view-spaces");
   selectCalendarDate(dateStr);
   const startInput = document.getElementById("bookingStart");
   const endInput = document.getElementById("bookingEnd");
@@ -464,7 +555,7 @@ function setQuickBlock(start, end) {
   if (endInput) endInput.value = end;
 }
 
-// PROCESAMIENTO Y ALMACENAMIENTO DE RESERVAS (INMEDIATO Y PERSISTENTE)
+// PROCESAMIENTO Y ALMACENAMIENTO DE RESERVAS (ESTRICTO Y PERSISTENTE)
 async function submitBooking(e) {
   e.preventDefault();
   const btn = document.getElementById("btnSubmitBooking");
@@ -473,16 +564,122 @@ async function submitBooking(e) {
   const payload = {
     spaceId: document.getElementById("bookingSpaceId").value,
     attendees: Number(document.getElementById("bookingAttendees").value),
-    requesterName: document.getElementById("bookingRequester").value,
+    requesterName: (document.getElementById("bookingRequester").value || "").trim(),
     requesterRole: document.getElementById("bookingRole").value,
-    activityTitle: document.getElementById("bookingActivity").value,
+    activityTitle: (document.getElementById("bookingActivity").value || "").trim(),
     date: document.getElementById("bookingDate").value,
     startTime: document.getElementById("bookingStart").value,
     endTime: document.getElementById("bookingEnd").value
   };
 
+  const spaces = appData.state.spaces || [];
+  const space = spaces.find((s) => s.id === payload.spaceId);
+
+  // 1. Validar existencia del salón
+  if (!space) {
+    showToast("Por favor selecciona un salón válido.", "error");
+    showBanner("El salón seleccionado no existe en el sistema.", "error");
+    return;
+  }
+
+  // 2. Validar estado de seguridad del salón
+  if (space.status !== "DISPONIBLE") {
+    const reason = space.lockReason || "Salón no disponible por novedad técnica o seguridad";
+    const msg = `El salón '${space.name}' está bloqueado (${reason}).`;
+    showToast(msg, "error");
+    showBanner(msg, "error");
+    if (auditBox) {
+      auditBox.style.display = "block";
+      auditBox.style.borderColor = "var(--campus-red)";
+      auditBox.innerHTML = `
+        <strong style="color: #FF4757;">🚫 Salón Bloqueado por Seguridad</strong>
+        <p style="margin-top: 4px; color: var(--text-muted);">${escapeHtml(reason)}</p>
+      `;
+    }
+    return;
+  }
+
+  // 3. Validar aforo estricto (no se puede sobrepasar el cupo del salón)
+  if (!payload.attendees || isNaN(payload.attendees) || payload.attendees < 1) {
+    showToast("Ingresa una cantidad válida de asistentes (mínimo 1).", "error");
+    showBanner("La cantidad de asistentes debe ser de al menos 1 persona.", "error");
+    return;
+  }
+
+  if (payload.attendees > space.capacity) {
+    const excess = payload.attendees - space.capacity;
+    const msg = `Exceso de aforo: '${space.name}' solo admite un máximo de ${space.capacity} personas (ingresaste ${payload.attendees}, sobrepasas el cupo por ${excess}).`;
+    showToast(msg, "error");
+    showBanner(msg, "error");
+    if (auditBox) {
+      auditBox.style.display = "block";
+      auditBox.style.borderColor = "var(--campus-red)";
+      auditBox.innerHTML = `
+        <strong style="color: #FF4757;">🚫 Exceso de Capacidad Máxima</strong>
+        <p style="margin-top: 4px; color: var(--text-muted);">${escapeHtml(msg)}</p>
+      `;
+    }
+    return;
+  }
+
+  // 4. Validar formato de horario y límites de la franja oficial
+  if (!payload.startTime || !payload.endTime) {
+    showToast("Por favor define las horas de inicio y fin.", "error");
+    return;
+  }
+
+  const reqStart = toMin(payload.startTime);
+  const reqEnd = toMin(payload.endTime);
+  const openMin = toMin("06:00");
+  const closeMin = toMin("22:00");
+
+  if (isNaN(reqStart) || isNaN(reqEnd) || reqEnd <= reqStart) {
+    const msg = "La hora de fin debe ser posterior a la hora de inicio.";
+    showToast(msg, "error");
+    showBanner(msg, "error");
+    return;
+  }
+
+  if (reqStart < openMin || reqEnd > closeMin) {
+    const msg = "El horario debe encontrarse dentro de la jornada oficial de Campuslands (06:00 a 22:00).";
+    showToast(msg, "error");
+    showBanner(msg, "error");
+    return;
+  }
+
+  const durationMin = reqEnd - reqStart;
+  if (durationMin < 15 || durationMin > 240) {
+    const msg = `La reserva debe durar entre 15 minutos y 4 horas (la duración solicitada es de ${durationMin} min).`;
+    showToast(msg, "error");
+    showBanner(msg, "error");
+    return;
+  }
+
+  // 5. Validar colisión / doble reserva (cero solapamiento en el mismo salón y franja)
+  const conflicting = (appData.state.bookings || []).find((b) => {
+    if (b.status !== "ACTIVA" || b.spaceId !== payload.spaceId || b.date !== payload.date) return false;
+    const bStart = toMin(b.startTime);
+    const bEnd = toMin(b.endTime);
+    return reqStart < bEnd && reqEnd > bStart;
+  });
+
+  if (conflicting) {
+    const msg = `Cruce de horario: '${space.name}' ya está reservado el ${payload.date} de ${conflicting.startTime} a ${conflicting.endTime} por ${conflicting.requesterName} ("${conflicting.activityTitle}"). Elige otra hora o salón libre.`;
+    showToast(msg, "error");
+    showBanner(msg, "error");
+    if (auditBox) {
+      auditBox.style.display = "block";
+      auditBox.style.borderColor = "var(--campus-red)";
+      auditBox.innerHTML = `
+        <strong style="color: #FF4757;">🚫 Cruce de Horario Detectado</strong>
+        <p style="margin-top: 4px; color: var(--text-muted);">${escapeHtml(msg)}</p>
+      `;
+    }
+    return;
+  }
+
   btn.disabled = true;
-  setLoader(true, "Registrando reserva en tiempo real...");
+  setLoader(true, "Verificando disponibilidad y guardando reserva...");
 
   try {
     const res = await fetch("/api/bookings", {
@@ -494,12 +691,12 @@ async function submitBooking(e) {
 
     if (auditBox) {
       auditBox.style.display = "block";
-      auditBox.style.borderColor = data.ok ? "var(--campus-mint)" : "var(--campus-red)";
+      auditBox.style.borderColor = (res.ok && data.ok) ? "var(--campus-mint)" : "var(--campus-red)";
       auditBox.innerHTML = `
-        <strong style="color: ${data.ok ? "#34D399" : "#FF4757"};">
-          ${data.ok ? "✅ Reserva Confirmada" : "🚫 Solicitud Bloqueada"}
+        <strong style="color: ${(res.ok && data.ok) ? "#34D399" : "#FF4757"};">
+          ${(res.ok && data.ok) ? "✅ Reserva Confirmada" : "🚫 Solicitud Bloqueada"}
         </strong>
-        <p style="margin-top: 4px; color: var(--text-muted);">${escapeHtml(data.message)}</p>
+        <p style="margin-top: 4px; color: var(--text-muted);">${escapeHtml(data.message || "Error al procesar reserva")}</p>
       `;
     }
 
@@ -509,7 +706,7 @@ async function submitBooking(e) {
       showBanner(data.message, "success");
       document.getElementById("bookingActivity").value = "";
 
-      // Inmediata actualización en memoria y localStorage
+      // Inmediata actualización en memoria y persistencia
       if (data.booking) {
         appData.state.bookings = appData.state.bookings || [];
         appData.state.bookings = appData.state.bookings.filter((b) => b.id !== data.booking.id);
@@ -518,39 +715,14 @@ async function submitBooking(e) {
       }
       renderAll();
     } else {
-      showToast(data.message || "Error al apartar salón", "error");
-      showBanner(data.message || "No se pudo completar la reserva", "error");
+      // SI EL SERVIDOR RECHAZA (422, 403, ETC.), SE MUESTRA EL ERROR CLARO Y NO SE GUARDA NINGÚN REGISTRO
+      showToast(data.message || "No se pudo completar la reserva", "error");
+      showBanner(data.message || "Solicitud rechazada por las reglas de Campuslands", "error");
     }
-    await loadState();
   } catch (err) {
-    // Si falla conexión al servidor, genera el registro local de contingencia
-    const localId = "RES-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-    const spaceObj = (appData.state.spaces || []).find((s) => s.id === payload.spaceId) || { name: payload.spaceId };
-    const localBooking = {
-      id: localId,
-      spaceId: payload.spaceId,
-      spaceName: spaceObj.name,
-      requesterName: payload.requesterName,
-      requesterRole: payload.requesterRole,
-      activityTitle: payload.activityTitle,
-      attendees: payload.attendees,
-      date: payload.date,
-      startTime: payload.startTime,
-      endTime: payload.endTime,
-      status: "ACTIVA",
-      bookingTag: "RESERVADO",
-      riskLevel: "BAJO",
-      securityNote: "Registrado localmente con respaldo automático.",
-      createdAt: new Date().toISOString()
-    };
-
-    appData.state.bookings = appData.state.bookings || [];
-    appData.state.bookings.unshift(localBooking);
-    saveLocalBookings(appData.state.bookings);
-    renderAll();
-
-    showToast(`✅ Reserva confirmada en ${spaceObj.name} (Modo Autónomo)`, "success");
-    showBanner(`Reserva ${localId} guardada con éxito en ${spaceObj.name}.`, "success");
+    console.error("Error al registrar reserva:", err);
+    showToast("Error de conexión al servidor al registrar la reserva.", "error");
+    showBanner("No se pudo conectar con el servidor para registrar la reserva.", "error");
   } finally {
     btn.disabled = false;
     setLoader(false);

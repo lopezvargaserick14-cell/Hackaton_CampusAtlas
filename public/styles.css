@@ -411,8 +411,43 @@ html, body {
 }
 
 /* ==========================================================================
-   VISTA 1: ESPACIOS & FORMULARIO
+   VISTA 1: ESPACIOS & FORMULARIO (DIVISIÓN RESPONSIVA Y CALENDARIO COMPLETO)
    ========================================================================== */
+
+.spaces-top-split {
+  display: grid;
+  grid-template-columns: 1.15fr 0.95fr;
+  gap: 20px;
+  align-items: stretch;
+  margin-bottom: 22px;
+}
+
+.spaces-cards-column,
+.reservation-form-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-section.fill-height {
+  height: 100%;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-section.fill-height .spaces-card-grid {
+  flex: 1;
+}
+
+.calendar-full-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+.calendar-full-panel .card-section {
+  margin-bottom: 0;
+}
 
 .spaces-dashboard-grid {
   display: grid;
@@ -452,9 +487,9 @@ html, body {
 /* CUADRÍCULA DE TARJETAS DE SALONES */
 .spaces-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 
 .space-card {
@@ -1197,14 +1232,15 @@ html, body {
 }
 
 /* RESPONSIVE */
-@media (max-width: 1080px) {
+@media (max-width: 1100px) {
+  .spaces-top-split,
   .spaces-dashboard-grid,
   .db-analytics-grid,
   .security-layout-grid {
     grid-template-columns: 1fr;
   }
   .portal-sidebar {
-    width: 200px;
+    width: 210px;
   }
 }
 

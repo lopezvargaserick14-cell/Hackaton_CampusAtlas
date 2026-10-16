@@ -96,7 +96,7 @@
 
       <!-- 3 TARJETAS KPIS REALES Y MEDIBLES (ESTILO PORTAL CAMPERS) -->
       <section class="kpi-grid" aria-label="Indicadores del Campus">
-        <article class="kpi-card prio-green" onclick="setFilterMode('VALIDA')" title="Filtrar salones disponibles">
+        <article class="kpi-card prio-green" onclick="handleKpiCardClick('VALIDA')" title="Filtrar salones disponibles">
           <span class="kpi-label">SALONES DISPONIBLES</span>
           <div class="kpi-value-row">
             <strong id="kpiFreeSpaces">7</strong>
@@ -105,7 +105,7 @@
           <span class="kpi-hint">✔ 100% operativos para reserva</span>
         </article>
 
-        <article class="kpi-card prio-cyan" onclick="setFilterMode('OCUPADO')" title="Filtrar salones ocupados hoy">
+        <article class="kpi-card prio-cyan" onclick="handleKpiCardClick('OCUPADO')" title="Filtrar salones ocupados hoy">
           <span class="kpi-label">OCUPADOS / EN USO</span>
           <div class="kpi-value-row">
             <strong id="kpiActiveBookings">0</strong>
@@ -114,7 +114,7 @@
           <span class="kpi-hint">Sincronizado con calendario</span>
         </article>
 
-        <article class="kpi-card prio-red" onclick="switchView('view-security')" title="Ver salones con novedades técnicas">
+        <article class="kpi-card prio-red" onclick="handleKpiCardClick('SECURITY')" title="Ver salones con novedades técnicas">
           <span class="kpi-label">NOVEDADES TÉCNICAS</span>
           <div class="kpi-value-row">
             <strong id="kpiSecurityAlerts">0</strong>
@@ -136,11 +136,11 @@
       <!-- VISTA 1: INICIO / SALONES, CALENDARIO INTEGRADO Y RESERVA DIRECTA -->
       <!-- ================================================================== -->
       <section id="view-spaces" class="view-panel active">
-        <div class="spaces-dashboard-grid">
-          <!-- COLUMNA IZQUIERDA: SALONES + CALENDARIO SEMANAL INTEGRADO -->
-          <div class="main-column">
-            <!-- SELECCIÓN DE SALONES -->
-            <div class="card-section">
+        <!-- FILA SUPERIOR RESPONSIVA: SALONES (IZQUIERDA) Y FORMULARIO (DERECHA) -->
+        <div class="spaces-top-split">
+          <!-- COLUMNA IZQUIERDA: SALONES E INSTALACIONES -->
+          <div class="spaces-cards-column">
+            <div class="card-section fill-height">
               <div class="section-head">
                 <div>
                   <h2 class="section-title">Salones e Instalaciones</h2>
@@ -162,38 +162,11 @@
               <!-- Cuadrícula de tarjetas de los 7 salones -->
               <div id="spacesGrid" class="spaces-card-grid"></div>
             </div>
-
-            <!-- CALENDARIO SEMANAL TIPO PORTAL CAMPERS -->
-            <div class="card-section">
-              <div class="section-head">
-                <div class="cal-title-wrap">
-                  <span class="white-calendar-icon">📅</span>
-                  <div>
-                    <h2 class="section-title">Calendario Semanal de Ocupación</h2>
-                    <span class="section-subtitle">Franjas oficiales de 06:00 a 21:00 • 11 oct. – 17 oct. 2026</span>
-                  </div>
-                </div>
-
-                <div class="week-tabs-wrap">
-                  <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-11')">DOM 11</button>
-                  <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-12')">LUN 12</button>
-                  <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-13')">MAR 13</button>
-                  <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-14')">MIÉ 14</button>
-                  <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-15')">JUE 15</button>
-                  <button type="button" class="day-tab active" onclick="selectCalendarDate('2026-10-16')">VIE 16 (Hoy)</button>
-                  <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-17')">SÁB 17</button>
-                </div>
-              </div>
-
-              <div class="schedule-scroll-wrap">
-                <div id="weeklyScheduleGrid" class="weekly-schedule-grid"></div>
-              </div>
-            </div>
           </div>
 
           <!-- COLUMNA DERECHA: FORMULARIO LIMPIO DE RESERVA -->
-          <div class="sidebar-column">
-            <div class="card-section form-card">
+          <div class="reservation-form-column">
+            <div class="card-section form-card fill-height">
               <div class="section-head compact">
                 <div>
                   <h2 class="section-title">Apartar / Reservar Salón</h2>
@@ -295,6 +268,35 @@
               </form>
 
               <div id="auditBox" class="audit-result-box" style="display: none;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FILA INFERIOR: CALENDARIO SEMANAL COMPLETO DE ANCHO TOTAL -->
+        <div class="calendar-full-panel">
+          <div class="card-section">
+            <div class="section-head">
+              <div class="cal-title-wrap">
+                <span class="white-calendar-icon">📅</span>
+                <div>
+                  <h2 class="section-title">Calendario Semanal de Ocupación</h2>
+                  <span class="section-subtitle">Franjas oficiales de 06:00 a 21:00 • 11 oct. – 17 oct. 2026</span>
+                </div>
+              </div>
+
+              <div class="week-tabs-wrap">
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-11')">DOM 11</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-12')">LUN 12</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-13')">MAR 13</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-14')">MIÉ 14</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-15')">JUE 15</button>
+                <button type="button" class="day-tab active" onclick="selectCalendarDate('2026-10-16')">VIE 16 (Hoy)</button>
+                <button type="button" class="day-tab" onclick="selectCalendarDate('2026-10-17')">SÁB 17</button>
+              </div>
+            </div>
+
+            <div class="schedule-scroll-wrap">
+              <div id="weeklyScheduleGrid" class="weekly-schedule-grid"></div>
             </div>
           </div>
         </div>
