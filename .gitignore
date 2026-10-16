@@ -1,0 +1,10 @@
+# Seguridad: Jamás subir credenciales al repositorio (-10 pts en rúbrica)
+.env
+.env.local
+.env.*.local
+
+# Dependencias y archivos del sistema
+node_modules/
+.DS_Store
+Thumbs.db
+*.log

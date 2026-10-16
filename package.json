@@ -1,0 +1,13 @@
+{
+  "name": "campus-shield-ai",
+  "version": "1.0.0",
+  "description": "Sistema Central de Gestión Operativa de Campuslands asistido por IA como Modelo de Seguridad",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
