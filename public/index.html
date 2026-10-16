@@ -3,393 +3,643 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Campuslands Ops // Plataforma Central de Gestión &amp; Seguridad IA</title>
-  <link rel="shortcut icon" href="/assets/logo.webp" />
-  <link rel="icon" href="/assets/logo.webp" type="image/webp" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>CampusAtlas | Sistema Central de Gestión Operativa — Campuslands</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/casco_azul.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <div class="app-shell">
-    <!-- ================================================================== -->
-    <!-- SIDEBAR MODERNA FIJA (ESTILO SAAS EMPRESARIAL CAMPUSLANDS)         -->
-    <!-- ================================================================== -->
+  <!-- Fondo Cósmico Animado con Keyframes -->
+  <div class="cosmic-backdrop" aria-hidden="true">
+    <div class="nebula-orb orb-cyan"></div>
+    <div class="nebula-orb orb-teal"></div>
+    <div class="nebula-orb orb-purple"></div>
+    <div class="star-grid"></div>
+  </div>
+
+  <!-- Contenedor de Notificaciones Toast Flotantes -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <div class="app-layout">
+    <!-- SIDEBAR DE NAVEGACIÓN (Desktop + Drawer / Bottom Bar en Móvil) -->
     <aside class="sidebar">
-      <div class="sidebar-brand">
+      <div class="brand-header">
         <div class="brand-logo-wrap">
-          <img src="/assets/casco_azul.svg" alt="Casco Campuslands" class="brand-helmet" />
-          <img src="/assets/Logo-texto-campus.svg" alt="Campuslands" class="brand-wordmark" />
+          <img src="/assets/casco_azul.svg" alt="Casco Campuslands" class="astronaut-helmet" />
+          <span class="orbit-ring"></span>
         </div>
-        <span class="brand-tag">OPERATIONS &amp; AI SECURITY</span>
+        <div class="brand-titles">
+          <img src="/assets/Logo-texto-campus.svg" alt="Campuslands" class="brand-wordmark" />
+          <span class="brand-subtag">ATLAS • MISSION CONTROL</span>
+        </div>
       </div>
 
-      <div class="sidebar-section-label">MÓDULOS OPERATIVOS</div>
-      <nav class="sidebar-nav" aria-label="Navegación Principal">
-        <button class="nav-item active" data-tab="tab-spaces" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <path d="M3 9h18M9 21V9"/>
-          </svg>
-          <span>Plano 2D &amp; Espacios</span>
-          <span class="nav-badge" id="badge-spaces-count">7</span>
+      <!-- Estado de Gemini AI en vivo -->
+      <div class="ai-core-card" id="aiCoreCard">
+        <div class="ai-core-header">
+          <span class="pulse-dot online" id="aiPulseDot"></span>
+          <span class="ai-core-title" id="aiStatusTitle">GEMINI 2.5 FLASH</span>
+        </div>
+        <p class="ai-core-desc" id="aiStatusDesc">Escudo Cognitivo Zero-Trust Activo</p>
+        <div class="ai-core-meta">
+          <span class="mono-tag">API: .env Protegida</span>
+          <span class="mono-tag">06:00–22:00</span>
+        </div>
+      </div>
+
+      <!-- Menú de Módulos -->
+      <nav class="side-nav" aria-label="Navegación Principal">
+        <button class="nav-btn active" data-view="view-overview" onclick="switchView('view-overview')">
+          <span class="nav-icon">🛰️</span>
+          <span class="nav-text">Centro de Mando & Mapa</span>
         </button>
-
-        <button class="nav-item" data-tab="tab-resources" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="3" width="20" height="14" rx="2"/>
-            <path d="M8 21h8M12 17v4"/>
-          </svg>
-          <span>Préstamo de Equipos</span>
-          <span class="nav-badge" id="badge-resources-count">4</span>
+        <button class="nav-btn" data-view="view-calendar" onclick="switchView('view-calendar')">
+          <span class="nav-icon">📅</span>
+          <span class="nav-text">Calendario & Reservas</span>
         </button>
-
-        <button class="nav-item" data-tab="tab-incidents" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-            <line x1="12" y1="8" x2="12" y2="12"/>
-            <line x1="12" y1="16" x2="12.01" y2="16"/>
-          </svg>
-          <span>Triaje IA Incidencias</span>
-          <span class="nav-badge badge-alert" id="badge-incidents-count">1</span>
+        <button class="nav-btn" data-view="view-resources" onclick="switchView('view-resources')">
+          <span class="nav-icon">💻</span>
+          <span class="nav-text">Inventario & Préstamos TI</span>
+          <span class="nav-badge danger" id="navOverdueBadge" title="Equipos vencidos">1</span>
         </button>
-
-        <div class="sidebar-section-label" style="margin-top:16px;">AUDITORÍA &amp; JURADO</div>
-
-        <button class="nav-item" data-tab="tab-rules" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="16 18 22 12 16 6"/>
-            <polyline points="8 6 2 12 8 18"/>
-          </svg>
-          <span>Motor de Reglas (3m)</span>
+        <button class="nav-btn" data-view="view-incidents" onclick="switchView('view-incidents')">
+          <span class="nav-icon">🚨</span>
+          <span class="nav-text">Incidencias & Triaje IA</span>
+          <span class="nav-badge danger" id="navIncidentBadge">2</span>
         </button>
-
-        <button id="btn-open-quarantine" class="nav-item nav-quarantine" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/>
-            <line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-          <span>Casos Borde Dataset</span>
-          <span class="nav-badge badge-warn" id="quarantine-count">3</span>
+        <button class="nav-btn" data-view="view-errors" onclick="switchView('view-errors')">
+          <span class="nav-icon">⚠️</span>
+          <span class="nav-text">Registros con Error</span>
+          <span class="nav-badge warning" id="navErrorBadge">3</span>
         </button>
       </nav>
 
-      <!-- WIDGET INFERIOR DE SEGURIDAD IA -->
-      <div class="sidebar-footer">
-        <div id="ai-status-pill" class="ai-shield-card online">
-          <div class="ai-shield-row">
-            <span class="status-dot"></span>
-            <strong id="ai-status-text">Gemini 2.5 Flash</strong>
-          </div>
-          <p>Escudo de Seguridad Activo</p>
+      <!-- Tarjeta Guía Defensa en Vivo (Regla en < 3 min) -->
+      <div class="defense-guide-box">
+        <div class="defense-header">
+          <span class="defense-icon">⚡</span>
+          <strong>Reto Jurado (&lt; 3 min)</strong>
         </div>
+        <p>Reglas centralizadas en <code>src/rules.js</code>:</p>
+        <ul class="rules-mini-list" id="sidebarRulesList">
+          <li>Horario: <strong>06:00 – 22:00</strong></li>
+          <li>Duración máx: <strong>240 min (4h)</strong></li>
+          <li>Aforo estricto: <strong>100% cap.</strong></li>
+          <li>Bloqueo por mora TI: <strong>ACTIVO</strong></li>
+        </ul>
+      </div>
 
-        <button id="btn-reset-demo" class="btn-sidebar-reset" type="button">
-          ↺ Restaurar Datos de Demo
+      <div class="sidebar-footer">
+        <button class="btn-action btn-csv" onclick="exportReportCSV()" title="Descargar reporte operativo en CSV">
+          <span>📥</span> Exportar Reporte CSV
+        </button>
+        <button class="btn-action btn-reset" onclick="resetDataset()" title="Restaurar dataset oficial de prueba">
+          <span>🔄</span> Restaurar Dataset Seed
         </button>
       </div>
     </aside>
 
-    <!-- ================================================================== -->
-    <!-- ÁREA DE TRABAJO PRINCIPAL                                          -->
-    <!-- ================================================================== -->
-    <div class="main-area">
-      <!-- TOPBAR LIMPIA CON MÉTRICAS CLAVE -->
+    <!-- ÁREA PRINCIPAL -->
+    <div class="main-wrapper">
+      <!-- BARRA SUPERIOR HERO + RELOJ + ALERTA DE MORA -->
       <header class="topbar">
-        <div>
-          <span class="breadcrumb">SEDE ZONA FRANCA SANTANDER • JORNADA 06:00 – 22:00</span>
-          <h1 class="page-title">Centro de Control Operativo del Campus</h1>
+        <div class="topbar-brand-info">
+          <div class="breadcrumb-pill">
+            <span class="live-beacon"></span>
+            <span>SEDE BUCARAMANGA • ZONA FRANCA SANTANDER</span>
+          </div>
+          <h1>Sistema Central de Gestión Operativa <span class="text-gradient">Campuslands</span></h1>
         </div>
 
-        <div class="topbar-metrics">
-          <div class="metric-pill">
-            <span class="metric-dot dot-green"></span>
-            <span>Disponibles: <strong id="kpi-available-spaces">0</strong></span>
+        <div class="topbar-controls">
+          <div class="clock-widget">
+            <span class="clock-label">RELOJ OPERATIVO</span>
+            <span class="clock-value" id="liveClock">08:00:00</span>
           </div>
-          <div class="metric-pill">
-            <span class="metric-dot dot-red"></span>
-            <span>Lockdown / Mant: <strong id="kpi-locked-spaces">0</strong></span>
-          </div>
-          <div class="metric-pill">
-            <span class="metric-dot dot-blue"></span>
-            <span>Reservas Hoy: <strong id="kpi-active-bookings">0</strong></span>
-          </div>
-          <div class="metric-pill">
-            <span class="metric-dot dot-amber"></span>
-            <span>Cuarentena: <strong id="kpi-quarantined">0</strong></span>
-          </div>
+          <button class="btn-copilot-toggle" onclick="toggleCopilotDrawer()">
+            <span class="copilot-sparkle">✨</span>
+            <span>Chat Copiloto IA</span>
+          </button>
         </div>
       </header>
 
-      <!-- CONTENIDO DE PESTAÑAS -->
-      <main class="content-body">
-        <!-- ============================================================== -->
-        <!-- PESTAÑA 1: PLANO 2D INTERACTIVO + CONSOLA DE ASIGNACIÓN        -->
-        <!-- ============================================================== -->
-        <section id="tab-spaces" class="tab-panel active">
-          <div class="module-split">
-            <!-- COLUMNA IZQUIERDA: PLANO ARQUITECTÓNICO 2D INTERACTIVO + CRONOGRAMA -->
-            <div class="map-column">
-              <div class="card">
-                <div class="card-header">
-                  <div>
-                    <h2>🗺️ Plano Arquitectónico 2D en Tiempo Real — Campuslands</h2>
-                    <p>Haz clic en cualquier salón o cabina del mapa para inspeccionar su aforo, equipos o asignarlo.</p>
-                  </div>
-                  <div class="map-legend">
-                    <span class="legend-item"><i class="dot-green"></i> Disponible</span>
-                    <span class="legend-item"><i class="dot-red"></i> Lockdown Seguridad</span>
-                    <span class="legend-item"><i class="dot-amber"></i> Mantenimiento</span>
-                  </div>
-                </div>
-
-                <!-- PLANO 2D INTERACTIVO DEL CAMPUS -->
-                <div class="floorplan-wrapper">
-                  <div class="floorplan-header-bar">
-                    <span>⬆️ ACCESO PRINCIPAL ZONA FRANCA • RECEPCIÓN &amp; SEGURIDAD</span>
-                    <span>ESCALA INTERACTIVA 1:1 • CLICK PARA SELECCIONAR</span>
-                  </div>
-
-                  <div id="floorplan-grid" class="floorplan-blueprint">
-                    <!-- Renderizado dinámico como Plano 2D por app.js -->
-                  </div>
-                </div>
-              </div>
-
-              <!-- CRONOGRAMA DE BLOQUES ACTIVOS -->
-              <div class="card">
-                <div class="card-header">
-                  <div>
-                    <h2>📅 Cronograma de Bloques Asignados Hoy (Cero Solapamiento)</h2>
-                    <p>Trazabilidad de salones ocupados y puntaje de auditoría otorgado por Gemini IA.</p>
-                  </div>
-                </div>
-                <div id="bookings-list" class="list-stack"></div>
-              </div>
-            </div>
-
-            <!-- COLUMNA DERECHA: INSPECTOR Y FORMULARIO DE ASIGNACIÓN -->
-            <aside class="inspector-column">
-              <div class="card sticky-card">
-                <div class="card-header">
-                  <div>
-                    <h2>🛡️ Asignación Segura de Espacio</h2>
-                    <p>Validación por <strong>Reglas de Dominio</strong> + <strong>Escudo Gemini IA</strong>.</p>
-                  </div>
-                </div>
-
-                <!-- BOTONES DE PRUEBA RÁPIDA PARA EL JURADO -->
-                <div class="presets-box">
-                  <span class="presets-label">⚡ Simulador de Casos en Vivo (1 Clic):</span>
-                  <div class="presets-grid">
-                    <button type="button" class="chip chip-ok" data-preset="valid">✓ Válido (Artemis 28p)</button>
-                    <button type="button" class="chip chip-err" data-preset="locked_incident">✕ Regla 1: Sputnik Lockdown</button>
-                    <button type="button" class="chip chip-err" data-preset="over_capacity">✕ Regla 2: Sobrecupo (48p)</button>
-                    <button type="button" class="chip chip-err" data-preset="under_capacity">✕ Regla 2B: Subutilización (2p)</button>
-                    <button type="button" class="chip chip-err" data-preset="time_overlap">✕ Regla 3: Choque Horario</button>
-                    <button type="button" class="chip chip-ai" data-preset="ai_security_threat">🛡️ Bloqueo IA: Riesgo Físico</button>
-                  </div>
-                </div>
-
-                <!-- FORMULARIO -->
-                <form id="booking-form" class="clean-form" novalidate>
-                  <div class="field">
-                    <label for="spaceId">Espacio Seleccionado en el Plano 2D</label>
-                    <select id="spaceId" name="spaceId" required></select>
-                  </div>
-
-                  <div class="field-row-2">
-                    <div class="field">
-                      <label for="requesterName">Solicitante</label>
-                      <input type="text" id="requesterName" value="Trainer Diego Rojas" required />
-                    </div>
-                    <div class="field">
-                      <label for="requesterRole">Rol</label>
-                      <select id="requesterRole">
-                        <option value="TRAINER">Trainer Técnico</option>
-                        <option value="CAMPER">Camper</option>
-                        <option value="TEAM_SER_INGLES">Coach Inglés / Ser</option>
-                        <option value="STAFF">Staff Operativo</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div class="field">
-                    <label>Bloques Oficiales Campuslands (Selección Rápida)</label>
-                    <div class="shift-pills">
-                      <button type="button" class="shift-btn" data-start="06:00" data-end="10:00">M1 (06–10h)</button>
-                      <button type="button" class="shift-btn active" data-start="10:00" data-end="14:00">M2 (10–14h)</button>
-                      <button type="button" class="shift-btn" data-start="14:00" data-end="18:00">T1 (14–18h)</button>
-                      <button type="button" class="shift-btn" data-start="18:00" data-end="22:00">T2 (18–22h)</button>
-                    </div>
-                  </div>
-
-                  <div class="field-row-3">
-                    <div class="field">
-                      <label for="attendees">Asistentes</label>
-                      <input type="number" id="attendees" min="1" max="300" value="28" required />
-                    </div>
-                    <div class="field">
-                      <label for="startTime">Inicio</label>
-                      <input type="time" id="startTime" value="10:00" required />
-                    </div>
-                    <div class="field">
-                      <label for="endTime">Fin</label>
-                      <input type="time" id="endTime" value="14:00" required />
-                    </div>
-                  </div>
-
-                  <input type="hidden" id="date" value="2026-10-16" />
-
-                  <div class="field">
-                    <label for="activityTitle">Actividad / Justificación (Auditada por Gemini IA)</label>
-                    <textarea id="activityTitle" rows="2" required>Bloque M2: Desarrollo de Microservicios &amp; Review Técnico Cohorte Artemis</textarea>
-                  </div>
-
-                  <button id="btn-submit-booking" type="submit" class="btn-submit">
-                    Auditar Seguridad y Confirmar Espacio
-                  </button>
-                </form>
-
-                <!-- RESULTADO DE LA AUDITORÍA -->
-                <div id="audit-result-container" class="audit-box hidden" aria-live="polite"></div>
-              </div>
-            </aside>
+      <!-- BANNER DE NOTIFICACIÓN DE PRÉSTAMOS VENCIDOS (Bonus + Regla de Negocio) -->
+      <div id="overdueAlertBanner" class="overdue-alert-banner" style="display: none;">
+        <div class="overdue-alert-left">
+          <span class="overdue- siren-icon">🔔</span>
+          <div>
+            <strong>NOTIFICACIÓN DE PRÉSTAMO VENCIDO (MORA ACTIVA):</strong>
+            <span id="overdueAlertText">Detectando equipos con tiempo de entrega vencido...</span>
           </div>
-        </section>
+        </div>
+        <div class="overdue-alert-actions">
+          <button class="btn-xs btn-light" onclick="switchView('view-resources')">Gestionar Devolución</button>
+        </div>
+      </div>
 
-        <!-- ============================================================== -->
-        <!-- PESTAÑA 2: PRÉSTAMO Y CONTROL DE EQUIPOS TECNOLÓGICOS          -->
-        <!-- ============================================================== -->
-        <section id="tab-resources" class="tab-panel">
-          <div class="module-split">
-            <div class="map-column">
-              <div class="card">
-                <div class="card-header">
-                  <div>
-                    <h2>💻 Inventario y Trazabilidad de Equipos TI</h2>
-                    <p>Control de portátiles, equipos de cómputo y kits vinculados a los salones del campus.</p>
-                  </div>
-                </div>
-                <div id="resources-preview-grid" class="resource-cards-grid"></div>
-              </div>
+      <!-- PANEL DE CONTADORES PRINCIPALES (KPIs requeridos por el jurado) -->
+      <section class="kpi-counters-grid" aria-label="Panel de Contadores Operativos">
+        <article class="kpi-card kpi-priority-low" onclick="applyQuickStatusFilter('DISPONIBLE')">
+          <div class="kpi-shimmer"></div>
+          <div class="kpi-icon-box green">🟢</div>
+          <div class="kpi-content">
+            <span class="kpi-label">ESPACIOS LIBRES</span>
+            <div class="kpi-number-row">
+              <strong class="kpi-value" id="kpiFreeSpaces">0</strong>
+              <span class="kpi-sub" id="kpiTotalSpaces">/ 7 válidos</span>
             </div>
-
-            <aside class="inspector-column">
-              <div class="card sticky-card">
-                <div class="card-header">
-                  <div>
-                    <h2>Solicitar Préstamo de Equipo</h2>
-                    <p>Valida disponibilidad, bloqueo de salón vinculado y mora activa del solicitante.</p>
-                  </div>
-                </div>
-                <form id="loan-form" class="clean-form">
-                  <div class="field">
-                    <label for="loanResourceId">Equipo Requerido</label>
-                    <select id="loanResourceId" required></select>
-                  </div>
-                  <div class="field">
-                    <label for="borrowerName">Camper o Trainer Solicitante</label>
-                    <input type="text" id="borrowerName" placeholder="Ej. Camper Sofía Vargas" required />
-                  </div>
-                  <div class="presets-box">
-                    <span class="presets-label">⚡ Probar Reglas de Préstamo:</span>
-                    <div class="presets-grid">
-                      <button type="button" class="chip chip-ok" id="preset-loan-ok">✓ Préstamo Válido</button>
-                      <button type="button" class="chip chip-err" id="preset-loan-mora">✕ Camper en Mora (Andrés Mejía)</button>
-                    </div>
-                  </div>
-                  <button type="submit" class="btn-submit">Autorizar Préstamo de Equipo</button>
-                </form>
-                <div id="loan-result-box" class="audit-box hidden"></div>
-              </div>
-            </aside>
+            <span class="kpi-foot">Prioridad Baja • Listos para reserva</span>
           </div>
-        </section>
+        </article>
 
-        <!-- ============================================================== -->
-        <!-- PESTAÑA 3: TRIAJE INTELIGENTE DE INCIDENCIAS CON GEMINI IA     -->
-        <!-- ============================================================== -->
-        <section id="tab-incidents" class="tab-panel">
-          <div class="module-split">
-            <div class="map-column">
-              <div class="card">
-                <div class="card-header">
-                  <div>
-                    <h2>🚨 Cola de Incidencias y Alertas de Seguridad</h2>
-                    <p>Los incidentes críticos bloquean automáticamente el salón afectado en el Plano 2D.</p>
-                  </div>
-                </div>
-                <div id="incidents-preview-list" class="list-stack"></div>
-              </div>
+        <article class="kpi-card kpi-priority-medium" onclick="switchView('view-resources')">
+          <div class="kpi-shimmer"></div>
+          <div class="kpi-icon-box blue">💻</div>
+          <div class="kpi-content">
+            <span class="kpi-label">EQUIPOS PRESTADOS</span>
+            <div class="kpi-number-row">
+              <strong class="kpi-value" id="kpiBorrowedEquip">0</strong>
+              <span class="kpi-sub" id="kpiOverdueSub">1 vencido</span>
             </div>
-
-            <aside class="inspector-column">
-              <div class="card sticky-card">
-                <div class="card-header">
-                  <div>
-                    <h2>🤖 Reportar Incidencia (Triaje Gemini IA)</h2>
-                    <p>Gemini clasifica la severidad y ejecuta un <strong>Auto-Lockdown</strong> en el Plano 2D si detecta peligro.</p>
-                  </div>
-                </div>
-                <form id="incident-form" class="clean-form">
-                  <div class="field">
-                    <label for="incidentTargetId">Salón Afectado</label>
-                    <select id="incidentTargetId" required></select>
-                  </div>
-                  <div class="field">
-                    <label for="incidentTitle">Título Corto del Reporte</label>
-                    <input type="text" id="incidentTitle" placeholder="Ej. Corto circuito en aire acondicionado" required />
-                  </div>
-                  <div class="field">
-                    <label for="incidentDesc">Descripción en Lenguaje Natural</label>
-                    <textarea id="incidentDesc" rows="3" placeholder="Describe qué ocurrió y cuántos campers hay en el salón..." required></textarea>
-                  </div>
-                  <button type="button" class="chip chip-ai" id="preset-incident-critical" style="margin-bottom:8px;">
-                    ⚡ Cargar Caso Crítico: Filtración de agua sobre tableros en Salón Artemis
-                  </button>
-                  <button type="submit" id="btn-submit-incident" class="btn-submit">
-                    Analizar con Gemini IA y Ejecutar Protocolo
-                  </button>
-                </form>
-              </div>
-            </aside>
+            <span class="kpi-foot">Control de inventario y mora TI</span>
           </div>
-        </section>
+        </article>
 
-        <!-- ============================================================== -->
-        <!-- PESTAÑA 4: INSPECTOR DE REGLAS EN VIVO (RETO 3 MINUTOS)        -->
-        <!-- ============================================================== -->
-        <section id="tab-rules" class="tab-panel">
-          <div class="card">
-            <div class="card-header">
+        <article class="kpi-card kpi-priority-high" onclick="switchView('view-incidents')">
+          <div class="kpi-shimmer"></div>
+          <div class="kpi-icon-box red">🚨</div>
+          <div class="kpi-content">
+            <span class="kpi-label">INCIDENCIAS ABIERTAS</span>
+            <div class="kpi-number-row">
+              <strong class="kpi-value" id="kpiOpenIncidents">0</strong>
+              <span class="kpi-sub" id="kpiCriticalIncSub">1 crítica</span>
+            </div>
+            <span class="kpi-foot">Prioridad Crítica • Auto-Lockdown IA</span>
+          </div>
+        </article>
+
+        <article class="kpi-card kpi-priority-error" onclick="switchView('view-errors')">
+          <div class="kpi-shimmer"></div>
+          <div class="kpi-icon-box amber">⚠️</div>
+          <div class="kpi-content">
+            <span class="kpi-label">REGISTROS CON ERROR</span>
+            <div class="kpi-number-row">
+              <strong class="kpi-value" id="kpiErrorRecords">0</strong>
+              <span class="kpi-sub">Aislados</span>
+            </div>
+            <span class="kpi-foot">Datos inconsistentes en dataset</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- BARRA GLOBAL DE BÚSQUEDA Y FILTROS (Por Estado, Tipo, Fecha y Texto) -->
+      <section class="filters-bar-card" aria-label="Filtros y Búsqueda Operativa">
+        <div class="filter-group search-group">
+          <label for="searchInput">🔍 Buscar salón, camper, equipo o ID</label>
+          <input
+            type="search"
+            id="searchInput"
+            placeholder="Ej: Apolo, Sputnik, Node.js, Camila, SP-CORRUPT..."
+            oninput="handleFiltersChange()"
+          />
+        </div>
+
+        <div class="filter-group">
+          <label for="filterStatus">Estado / Prioridad</label>
+          <select id="filterStatus" onchange="handleFiltersChange()">
+            <option value="ALL">Todos los estados</option>
+            <option value="DISPONIBLE">🟢 Disponible (Baja)</option>
+            <option value="OCUPADO_AHORA">🔵 Con Reserva Activa</option>
+            <option value="BLOQUEADO_SEGURIDAD">🔴 Bloqueado Seguridad (Crítica)</option>
+            <option value="MANTENIMIENTO">🟠 En Mantenimiento (Media)</option>
+            <option value="REGISTRO_CON_ERROR">⚠️ Registro con Error (Dataset)</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterType">Tipo de Espacio</label>
+          <select id="filterType" onchange="handleFiltersChange()">
+            <option value="ALL">Todos los tipos</option>
+            <option value="SALA_ENTRENAMIENTO">🚀 Sala de Entrenamiento (Apolo/Artemis/Sputnik)</option>
+            <option value="AUDITORIO">🌌 Auditorio (Corvus)</option>
+            <option value="CABINA_REVIEW">🎙️ Cabina de Review / Inglés</option>
+            <option value="SALA_REUNIONES">🛰️ Sala de Reuniones (Houston)</option>
+            <option value="ZONA_BIENESTAR">🧘 Zona Bienestar & Cowork</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="filterDate">Fecha de Operación</label>
+          <input
+            type="date"
+            id="filterDate"
+            value="2026-10-16"
+            onchange="handleFiltersChange()"
+          />
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn-clear-filters" onclick="resetFilters()" title="Limpiar todos los filtros">
+            Limpiar Filtros
+          </button>
+        </div>
+      </section>
+
+      <!-- INDICADOR GLOBAL DE CARGA DE IA ("Cargando mientras la IA responde") -->
+      <div id="globalAiLoader" class="ai-loading-banner" style="display: none;" role="status" aria-live="assertive">
+        <div class="orbital-spinner">
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+          <img src="/assets/casco_azul.svg" alt="" class="spinner-helmet" />
+        </div>
+        <div class="ai-loading-text">
+          <strong id="aiLoaderTitle">Cargando... Gemini 2.5 Flash está auditando la operación en tiempo real</strong>
+          <span id="aiLoaderSubtitle">Verificando reglas de dominio, cruces horarios, aforo e inyecciones de seguridad...</span>
+        </div>
+      </div>
+
+      <!-- BANNER DE RESPUESTA CLARA DE ÉXITO O ERROR -->
+      <div id="operationFeedbackBanner" class="feedback-banner" style="display: none;" role="alert"></div>
+
+      <!-- ============================================================== -->
+      <!-- VISTA 1: CENTRO DE MANDO (MAPA 2D + RESERVA RÁPIDA + ERRORES) -->
+      <!-- ============================================================== -->
+      <main id="view-overview" class="view-section active">
+        <div class="overview-grid">
+          <!-- Columna Izquierda: Mapa Arquitectónico 2D Interactivo -->
+          <section class="glass-panel map-panel">
+            <div class="panel-header">
               <div>
-                <h2>⚙️ Configuración Centralizada de Reglas de Dominio (<code>src/rules.js</code>)</h2>
-                <p>Para superar el reto de modificación en vivo del jurado en menos de 3 minutos.</p>
+                <span class="panel-eyebrow">TELEMETRÍA ESPACIAL EN VIVO</span>
+                <h2>Plano Operativo 2D — Instalaciones Campuslands</h2>
+              </div>
+              <div class="priority-legend">
+                <span class="legend-pill low"><i class="dot green"></i> Libre / Baja</span>
+                <span class="legend-pill medium"><i class="dot amber"></i> Mantenimiento / Media</span>
+                <span class="legend-pill high"><i class="dot red"></i> Bloqueo Crítico</span>
+                <span class="legend-pill error"><i class="dot purple"></i> Registro con Error</span>
               </div>
             </div>
-            <pre id="rules-config-json" class="code-inspector"></pre>
+
+            <p class="panel-helper">
+              Haz clic en cualquier nave o salón para pre-seleccionarlo en el formulario de reserva o auditar su estado. Pasa el cursor (hover) para activar el escáner orbital.
+            </p>
+
+            <!-- Grid del Mapa 2D (Incluye espacios limpios + tarjetas de registro con error si el filtro lo permite) -->
+            <div id="campusFloorMap" class="campus-floor-map"></div>
+          </section>
+
+          <!-- Columna Derecha: Formulario de Asignación con Escudo IA -->
+          <section class="glass-panel booking-form-panel">
+            <div class="panel-header">
+              <div>
+                <span class="panel-eyebrow">MÓDULO 1 • ASIGNACIÓN PREVENTIVA</span>
+                <h2>Reservar Espacio de Entrenamiento</h2>
+              </div>
+              <span class="shield-chip">🛡️ Gemini Zero-Trust</span>
+            </div>
+
+            <!-- Botones de Escenarios Rápidos para Demostración ante el Jurado -->
+            <div class="demo-scenarios-bar">
+              <span class="demo-label">⚡ Pruebas en 1 clic para el Jurado:</span>
+              <div class="demo-buttons-row">
+                <button type="button" class="chip-btn chip-ok" onclick="fillDemoScenario('VALID')">
+                  ✅ Reserva Válida
+                </button>
+                <button type="button" class="chip-btn chip-warn" onclick="fillDemoScenario('OVERCAPACITY')">
+                  🚫 Exceso Aforo (50 en Apolo)
+                </button>
+                <button type="button" class="chip-btn chip-warn" onclick="fillDemoScenario('OVERDUE_USER')">
+                  ⏳ Usuario con Mora TI
+                </button>
+                <button type="button" class="chip-btn chip-danger" onclick="fillDemoScenario('PROMPT_INJECTION')">
+                  ☣️ Ataque / Riesgo IA
+                </button>
+              </div>
+            </div>
+
+            <form id="bookingForm" class="ops-form" onsubmit="submitBooking(event)">
+              <div class="form-row-2">
+                <div class="field-box">
+                  <label for="bookingSpaceId">Nave / Espacio Campuslands</label>
+                  <select id="bookingSpaceId" required></select>
+                </div>
+                <div class="field-box">
+                  <label for="bookingRole">Rol en Campus</label>
+                  <select id="bookingRole" required>
+                    <option value="TRAINER">Trainer Técnico</option>
+                    <option value="TEAM_EDUCACION">Team Educación / Staff</option>
+                    <option value="CAMPER">Camper</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row-2">
+                <div class="field-box">
+                  <label for="bookingRequester">Nombre del Solicitante</label>
+                  <input type="text" id="bookingRequester" placeholder="Ej: Trainer Miguel Rueda" required />
+                </div>
+                <div class="field-box">
+                  <label for="bookingAttendees">Asistentes (Aforo)</label>
+                  <input type="number" id="bookingAttendees" min="1" max="200" value="28" required />
+                </div>
+              </div>
+
+              <div class="field-box">
+                <label for="bookingActivity">Actividad Académica & Justificación (Auditada por Gemini IA)</label>
+                <input
+                  type="text"
+                  id="bookingActivity"
+                  placeholder="Ej: Masterclass de Arquitectura Microservicios y Docker"
+                  required
+                />
+              </div>
+
+              <!-- Atajos de Bloques Oficiales Campuslands -->
+              <div class="time-blocks-bar">
+                <span>Bloques Oficiales:</span>
+                <button type="button" class="block-pill" onclick="setOfficialBlock('06:00','09:30')">M1 (06:00–09:30)</button>
+                <button type="button" class="block-pill" onclick="setOfficialBlock('10:00','13:30')">M2 (10:00–13:30)</button>
+                <button type="button" class="block-pill" onclick="setOfficialBlock('14:00','17:30')">T1 (14:00–17:30)</button>
+                <button type="button" class="block-pill" onclick="setOfficialBlock('18:00','21:30')">T2 (18:00–21:30)</button>
+              </div>
+
+              <div class="form-row-3">
+                <div class="field-box">
+                  <label for="bookingDate">Fecha</label>
+                  <input type="date" id="bookingDate" value="2026-10-16" required />
+                </div>
+                <div class="field-box">
+                  <label for="bookingStart">Hora Inicio</label>
+                  <input type="time" id="bookingStart" value="10:15" required />
+                </div>
+                <div class="field-box">
+                  <label for="bookingEnd">Hora Fin</label>
+                  <input type="time" id="bookingEnd" value="12:15" required />
+                </div>
+              </div>
+
+              <button type="submit" id="btnSubmitBooking" class="btn-submit-primary">
+                <span class="btn-glow"></span>
+                <span id="btnSubmitBookingText">🛡️ Auditar con Gemini IA y Confirmar Reserva</span>
+              </button>
+            </form>
+
+            <!-- Resultado Detallado de Auditoría (Reglas + Gemini IA + Sugerencias) -->
+            <div id="bookingAuditResult" class="audit-result-box" style="display: none;"></div>
+          </section>
+        </div>
+
+        <!-- Resumen Inferior en Centro de Mando: Calendario Visual Compacto + Registros con Error -->
+        <div class="overview-bottom-grid">
+          <section class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <span class="panel-eyebrow">CRONOGRAMA EN TIEMPO REAL</span>
+                <h2>Reservas Activas en Campus (<span id="activeBookingsCountBadge">0</span>)</h2>
+              </div>
+              <button class="btn-xs btn-outline" onclick="switchView('view-calendar')">
+                📅 Ver Matriz Horaria Completa
+              </button>
+            </div>
+            <div id="activeBookingsList" class="bookings-cards-list"></div>
+          </section>
+
+          <section class="glass-panel error-preview-panel">
+            <div class="panel-header">
+              <div>
+                <span class="panel-eyebrow text-amber">RESILIENCIA DE DATOS (SANITY CHECK)</span>
+                <h2>Registros con Error Detectados en Dataset</h2>
+              </div>
+              <span class="badge-priority error">No rompen el sistema</span>
+            </div>
+            <p class="panel-helper">
+              El sanitizador aisló automáticamente los siguientes registros inconsistentes del archivo JSON oficial (aforo negativo, estado desconocido, horas invertidas):
+            </p>
+            <div id="overviewErrorsPreview" class="error-records-list"></div>
+          </section>
+        </div>
+      </main>
+
+      <!-- ============================================================== -->
+      <!-- VISTA 2: CALENDARIO VISUAL DE RESERVAS (06:00 A 22:00)        -->
+      <!-- ============================================================== -->
+      <main id="view-calendar" class="view-section">
+        <section class="glass-panel">
+          <div class="panel-header">
+            <div>
+              <span class="panel-eyebrow">BONUS • CALENDARIO VISUAL DE OPERACIONES</span>
+              <h2>Matriz Horaria de Ocupación Campuslands (06:00 – 22:00)</h2>
+            </div>
+            <div class="calendar-badges">
+              <span class="block-tag">Bloque M1: 06:00–09:30</span>
+              <span class="block-tag">Bloque M2: 10:00–13:30</span>
+              <span class="block-tag">Bloque T1: 14:00–17:30</span>
+              <span class="block-tag">Bloque T2: 18:00–21:30</span>
+            </div>
           </div>
+          <p class="panel-helper">
+            Visualización interactiva por franja horaria. Haz clic en un bloque libre para agendar esa franja directamente o en un bloque ocupado para inspeccionar su auditoría IA.
+          </p>
+
+          <div class="visual-calendar-wrapper">
+            <div id="visualCalendarMatrix" class="visual-calendar-matrix"></div>
+          </div>
+        </section>
+      </main>
+
+      <!-- ============================================================== -->
+      <!-- VISTA 3: INVENTARIO TI & CONTROL DE PRÉSTAMOS VENCIDOS        -->
+      <!-- ============================================================== -->
+      <main id="view-resources" class="view-section">
+        <div class="module-split-grid">
+          <section class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <span class="panel-eyebrow">MÓDULO 2 • HARDWARE & LABORATORIO</span>
+                <h2>Inventario de Equipos TI y Alertas de Mora</h2>
+              </div>
+              <span class="badge-priority medium">Trazabilidad Activa</span>
+            </div>
+            <div id="resourcesListContainer" class="resources-grid"></div>
+          </section>
+
+          <section class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <span class="panel-eyebrow">DESPACHO DE ALMACÉN</span>
+                <h2>Registrar Préstamo de Equipo</h2>
+              </div>
+            </div>
+            <p class="panel-helper">
+              Regla R6 activa: Si el solicitante posee un equipo con préstamo vencido (mora), el sistema bloqueará nuevos préstamos automáticamente.
+            </p>
+            <form id="loanForm" class="ops-form" onsubmit="submitResourceLoan(event)">
+              <div class="field-box">
+                <label for="loanResourceId">Seleccionar Equipo Disponible</label>
+                <select id="loanResourceId" required></select>
+              </div>
+              <div class="field-box">
+                <label for="loanBorrower">Nombre del Camper o Trainer</label>
+                <input type="text" id="loanBorrower" placeholder="Ej: Camper Valentina Gómez" required />
+              </div>
+              <div class="field-box">
+                <label for="loanDueTime">Fecha y Hora Límite de Devolución</label>
+                <input type="datetime-local" id="loanDueTime" value="2026-10-16T18:00" required />
+              </div>
+              <div class="demo-buttons-row" style="margin-bottom: 12px;">
+                <button type="button" class="chip-btn chip-warn" onclick="document.getElementById('loanBorrower').value='Camper Andrés Mejía'">
+                  ⏳ Probar con Camper en Mora (Andrés Mejía)
+                </button>
+              </div>
+              <button type="submit" class="btn-submit-primary">
+                <span>💻 Autorizar Préstamo de Equipo</span>
+              </button>
+            </form>
+          </section>
+        </div>
+      </main>
+
+      <!-- ============================================================== -->
+      <!-- VISTA 4: INCIDENCIAS & TRIAJE COGNITIVO CON GEMINI IA         -->
+      <!-- ============================================================== -->
+      <main id="view-incidents" class="view-section">
+        <div class="module-split-grid">
+          <section class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <span class="panel-eyebrow">MÓDULO 3 • PRIORIDAD POR COLORES</span>
+                <h2>Bitácora de Incidencias (Rojo = Crítica, Ámbar = Media, Verde = Baja)</h2>
+              </div>
+            </div>
+            <div id="incidentsListContainer" class="incidents-stack"></div>
+          </section>
+
+          <section class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <span class="panel-eyebrow">CLASIFICACIÓN AUTOMÁTICA IA</span>
+                <h2>Reportar Incidencia Operativa o de Seguridad</h2>
+              </div>
+              <span class="shield-chip">🤖 Auto-Lockdown</span>
+            </div>
+            <p class="panel-helper">
+              Gemini 2.5 Flash evalúa la gravedad del reporte. Si detecta severidad <strong>CRÍTICA</strong>, bloquea automáticamente el salón en el Mapa 2D.
+            </p>
+
+            <div class="demo-buttons-row" style="margin-bottom: 12px;">
+              <button type="button" class="chip-btn chip-danger" onclick="fillIncidentDemo('CRITICAL')">
+                🔴 Demo Crítica (Humo / Cortocircuito en Sputnik)
+              </button>
+              <button type="button" class="chip-btn chip-ok" onclick="fillIncidentDemo('LOW')">
+                🟢 Demo Baja (Falta marcador borrable en Apolo)
+              </button>
+            </div>
+
+            <form id="incidentForm" class="ops-form" onsubmit="submitIncident(event)">
+              <div class="field-box">
+                <label for="incidentTargetId">Espacio Afectado</label>
+                <select id="incidentTargetId" required></select>
+              </div>
+              <div class="field-box">
+                <label for="incidentTitle">Título Breve del Incidente</label>
+                <input type="text" id="incidentTitle" placeholder="Ej: Cortocircuito en regleta principal" required />
+              </div>
+              <div class="field-box">
+                <label for="incidentDesc">Descripción Detallada de lo Ocurrido</label>
+                <textarea
+                  id="incidentDesc"
+                  rows="4"
+                  placeholder="Describe síntomas, riesgos para los campers o fallos técnicos..."
+                  required
+                ></textarea>
+              </div>
+              <button type="submit" id="btnSubmitIncident" class="btn-submit-primary btn-danger-glow">
+                <span>🚨 Clasificar con Gemini IA y Ejecutar Protocolo</span>
+              </button>
+            </form>
+          </section>
+        </div>
+      </main>
+
+      <!-- ============================================================== -->
+      <!-- VISTA 5: MANEJO DE DATOS INCONSISTENTES ("REGISTRO CON ERROR") -->
+      <!-- ============================================================== -->
+      <main id="view-errors" class="view-section">
+        <section class="glass-panel">
+          <div class="panel-header">
+            <div>
+              <span class="panel-eyebrow text-amber">REQUISITO TÉCNICO • TOLERANCIA A FALLOS</span>
+              <h2>Manejo de Datos Inconsistentes — Registros con Error</h2>
+            </div>
+            <span class="badge-priority error">Sanitizador Activo (`sanitizeCampusDataset`)</span>
+          </div>
+          <p class="panel-helper">
+            Cuando el dataset oficial incluye registros corruptos (aforo negativo, estados inventados, nombres vacíos o rangos de fecha/hora invertidos), CampusAtlas <strong>jamás se rompe</strong>: los intercepta en <code>src/rules.js</code> y los expone aquí como <strong>"Registro con error"</strong> para auditoría técnica.
+          </p>
+
+          <div id="fullErrorRecordsContainer" class="error-cards-grid"></div>
         </section>
       </main>
     </div>
   </div>
 
-  <!-- MODAL DE CASOS BORDE AISLADOS -->
-  <div id="quarantine-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true">
-    <div class="modal-card card">
-      <div class="card-header">
+  <!-- ============================================================== -->
+  <!-- DRAWER FLOTANTE: CHAT DE ASISTENCIA CON IA (COPILOTO CAMPUS)  -->
+  <!-- ============================================================== -->
+  <aside id="copilotDrawer" class="copilot-drawer" aria-label="Chat de Asistencia con IA">
+    <div class="copilot-header">
+      <div class="copilot-title-row">
+        <img src="/assets/casco_azul.svg" alt="Copiloto" class="copilot-avatar" />
         <div>
-          <h2>🛡️ Casos Borde e Inconsistencias Aisladas del Dataset</h2>
-          <p>Registros corruptos detectados al leer <code>data/campus_data.json</code> y puestos en cuarentena.</p>
+          <h3>Copiloto IA Campuslands</h3>
+          <span class="copilot-status">En línea • Gemini 2.5 Flash</span>
         </div>
-        <button id="btn-close-quarantine" class="btn-sidebar-reset" style="width:auto;" type="button">Cerrar ✕</button>
       </div>
-      <div id="quarantine-list" class="list-stack"></div>
+      <button class="btn-close-copilot" onclick="toggleCopilotDrawer()" aria-label="Cerrar chat">✕</button>
     </div>
-  </div>
+
+    <div class="copilot-quick-prompts">
+      <button type="button" onclick="sendQuickPrompt('¿Qué aulas están libres a las 3 de la tarde?')">
+        ¿Qué aulas están libres a las 3?
+      </button>
+      <button type="button" onclick="sendQuickPrompt('¿Qué equipos tienen préstamo vencido ahora mismo?')">
+        ¿Equipos con préstamo vencido?
+      </button>
+      <button type="button" onclick="sendQuickPrompt('¿Por qué está bloqueado el Auditorio Corvus y qué incidencias hay?')">
+        ¿Por qué está bloqueado Corvus?
+      </button>
+    </div>
+
+    <div id="copilotMessages" class="copilot-messages">
+      <div class="chat-bubble assistant">
+        <div class="bubble-meta">🛰️ Copiloto Gemini • Telemetría en vivo</div>
+        <p>
+          ¡Hola, Camper! Soy el asistente operativo de <strong>Campuslands</strong>. Conozco en tiempo real los aforos de Apolo, Artemis, Sputnik, Corvus, las reservas del día y las alertas de mora.
+          <br /><br />
+          Pregúntame por ejemplo: <em>"¿Qué aulas están libres a las 3?"</em>
+        </p>
+      </div>
+    </div>
+
+    <form class="copilot-input-bar" onsubmit="submitCopilotQuestion(event)">
+      <input
+        type="text"
+        id="copilotInput"
+        placeholder="Escribe tu consulta... (ej: ¿Qué aulas están libres a las 3?)"
+        autocomplete="off"
+      />
+      <button type="submit" id="btnSendCopilot">Enviar 🚀</button>
+    </form>
+  </aside>
+
+  <!-- Botón Flotante FAB para abrir el Chat en cualquier momento -->
+  <button id="copilotFab" class="copilot-fab" onclick="toggleCopilotDrawer()" title="Consultar al Copiloto IA">
+    <img src="/assets/casco_azul.svg" alt="" class="fab-helmet" />
+    <span class="fab-text">Consultar IA</span>
+  </button>
 
   <script src="/app.js"></script>
 </body>

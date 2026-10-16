@@ -26,7 +26,8 @@ const {
 } = require("./src/rules");
 const {
   evaluateBookingSecurityWithGemini,
-  triageIncidentWithGemini
+  triageIncidentWithGemini,
+  askCampusCopilotWithGemini
 } = require("./src/geminiSecurity");
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -322,6 +323,98 @@ const server = http.createServer(async (req, res) => {
       }
       saveRawDataset(rawJson);
       return sendJson(res, 200, { ok: true, message: "Incidencia resuelta y salón rehabilitado." });
+    }
+
+    // POST /api/chat (Copiloto Conversacional Gemini IA)
+    if (req.method === "POST" && pathname === "/api/chat") {
+      const { question } = await parseBody(req);
+      if (!question || !String(question).trim()) {
+        return sendJson(res, 400, { ok: false, message: "Escribe una consulta para el Copiloto IA." });
+      }
+      const { cleanData } = getSanitizedState();
+      const chatRes = await askCampusCopilotWithGemini(String(question).trim(), cleanData);
+      return sendJson(res, 200, {
+        ok: true,
+        reply: chatRes.reply,
+        provider: chatRes.provider
+      });
+    }
+
+    // GET /api/export/csv (Exportar reporte completo a CSV)
+    if (req.method === "GET" && pathname === "/api/export/csv") {
+      const { cleanData, quarantinedRecords } = getSanitizedState();
+      const escapeCsv = (val) => `"${String(val == null ? "" : val).replace(/"/g, '""')}"`;
+      const rows = [
+        ["SECCION", "ID", "NOMBRE_O_TITULO", "ESTADO_O_SEVERIDAD", "RESPONSABLE_O_AFORO", "DETALLE_OPERATIVO", "TIMESTAMP"].map(escapeCsv).join(",")
+      ];
+
+      (cleanData.spaces || []).forEach((s) => {
+        rows.push([
+          "ESPACIO_CAMPUS",
+          s.id,
+          s.name,
+          s.status,
+          `Aforo Max: ${s.capacity}`,
+          `${s.zone} | ${s.type}${s.lockReason ? " | Lock: " + s.lockReason : ""}`,
+          new Date().toISOString()
+        ].map(escapeCsv).join(","));
+      });
+
+      (cleanData.bookings || []).forEach((b) => {
+        rows.push([
+          "RESERVA_HORARIA",
+          b.id,
+          b.activityTitle,
+          b.status,
+          `${b.requesterName} (${b.attendees} pax)`,
+          `${b.spaceName} | ${b.date} ${b.startTime}-${b.endTime}`,
+          b.createdAt || new Date().toISOString()
+        ].map(escapeCsv).join(","));
+      });
+
+      (cleanData.resources || []).forEach((r) => {
+        rows.push([
+          "EQUIPO_TI",
+          r.id,
+          r.name,
+          r.status,
+          r.borrowedBy || "Almacen Central",
+          `Cat: ${r.category}${r.dueTime ? " | Vence: " + r.dueTime : ""}`,
+          new Date().toISOString()
+        ].map(escapeCsv).join(","));
+      });
+
+      (cleanData.incidents || []).forEach((i) => {
+        rows.push([
+          "INCIDENCIA_CAMPUS",
+          i.id,
+          i.title,
+          `${i.severity} (${i.status})`,
+          i.targetId,
+          `${i.category} | ${i.aiRecommendation || i.description}`,
+          i.createdAt || new Date().toISOString()
+        ].map(escapeCsv).join(","));
+      });
+
+      (quarantinedRecords || []).forEach((q) => {
+        rows.push([
+          "REGISTRO_CON_ERROR",
+          q.id,
+          q.entityType,
+          "DATO_INCONSISTENTE",
+          "Sanitizador Automatico",
+          q.reason,
+          new Date().toISOString()
+        ].map(escapeCsv).join(","));
+      });
+
+      const csvContent = "\uFEFF" + rows.join("\r\n");
+      res.writeHead(200, {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="CampusAtlas_Reporte_Operativo_${new Date().toISOString().slice(0, 10)}.csv"`,
+        "Cache-Control": "no-store"
+      });
+      return res.end(csvContent);
     }
 
     // POST /api/reset

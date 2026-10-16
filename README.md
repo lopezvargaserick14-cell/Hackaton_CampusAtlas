@@ -1,43 +1,67 @@
-# 🛡️ CampusShield AI — Sistema Central de Gestión Operativa de Campuslands
+# 🛰️ CampusAtlas — Sistema Central de Gestión Operativa de Campuslands
 
-Prototipo Funcional (MVP) inspirado en los sistemas de gestión y seguridad operativa de grandes universidades (**MIT Atlas** y **ServiceNow Higher-Ed**), donde la **Inteligencia Artificial (Google Gemini)** actúa como el **Modelo Central de Seguridad Operativa, Física y de Datos**.
+**Hackatón Campuslands: "El campus bajo presión"**  
+Inspirado en **MIT Atlas** y **ServiceNow Higher-Ed**, diseñado con la identidad visual espacial oficial de **Campuslands (`campuslands.com`)** y blindado por **Google Gemini 2.5 Flash** como motor de seguridad preventiva Zero-Trust, triaje de incidencias y copiloto conversacional.
 
 ---
 
-## 🚀 Cómo Ejecutar el Proyecto
+## ✨ Características Implementadas (100% Rúbrica + Todos los Bonus)
 
-1. **Configurar la API Key de Gemini (En privado, jamás se sube a Git):**
-   Abre el archivo `.env` en la raíz del proyecto y pega tu clave de Google AI Studio:
+### 🛡️ 1. Módulos Principales & Reglas de Negocio (`src/rules.js`)
+- **Asignación de Espacios con Auditoría IA**: Validación determinista + cognitiva de horarios (`06:00` a `22:00`), límite de duración (`240 min`), **cero solapamiento horario**, **respeto estricto del aforo** (`35` en Apolo/Artemis/Sputnik, `80` en Corvus, `6` en Cabinas Review) y sugerencia automática de salones alternativos.
+- **Préstamo de Equipos TI & Notificaciones de Mora**: Control de inventario de hardware (MacBooks, Kits Arduino, Cámaras, Microfonía) con **alerta visual de préstamo vencido** y bloqueo preventivo para usuarios en mora.
+- **Triaje de Incidencias con Prioridad por Colores y Auto-Lockdown**: Clasificación automática con Gemini IA en prioridades codificadas por color (**Rojo = Crítica/Alta**, **Ámbar = Media**, **Verde = Baja**) y bloqueo instantáneo del salón afectado en el **Plano Operativo 2D**.
+
+### 🔍 2. Usabilidad, Resiliencia y Experiencia Visual
+- **Sinergia Oficial `campuslands.com` + `@keyframes` Interactivos**: Paleta espacial profunda (`#030712`, `#0076B7`, `#56B4FF`, `#3BC4A5`), logos oficiales, tipografías `Poppins` + `Roboto Mono`, efectos radar al pasar el ratón (`hoverScannerSweep`), pulso de alerta e indicador orbital **"Cargando..."** mientras la IA responde.
+- **100% Responsivo**: Adaptado a pantallas de escritorio, laptops, tablets y teléfonos móviles.
+- **Panel de Contadores en Tiempo Real**: Espacios libres, equipos prestados, incidencias abiertas y registros con error.
+- **Búsqueda y Filtros Dinámicos**: Por texto libre, estado/prioridad, tipo de espacio y fecha.
+- **Manejo Explícito de Datos Inconsistentes ("Registro con error")**: Los registros corruptos del dataset (aforo negativo `-15`, estados desconocidos, horas invertidas `14:00 -> 10:00`) son interceptados por `sanitizeCampusDataset` y mostrados claramente como **`⚠️ REGISTRO CON ERROR`** sin romper jamás la aplicación.
+
+### 🟢 3. Todos los Bonus Incluidos
+1. **📅 Calendario Visual de Reservas**: Matriz horaria interactiva por bloques oficiales de Campuslands (`M1`, `M2`, `T1`, `T2`).
+2. **📥 Exportación de Reportes a CSV**: Descarga instantánea en `/api/export/csv` compatible con Excel.
+3. **🔔 Notificaciones de Equipos con Préstamo Vencido**: Banner superior animado en tiempo real.
+4. **✨ Chat de Asistencia con IA (Copiloto Campuslands)**: Consulta en lenguaje natural el estado del campus (*"¿Qué aulas están libres a las 3?"*).
+
+---
+
+## ⚡ Guía para la Defensa en Vivo (Modificar Regla en < 3 Minutos)
+
+Todas las reglas de negocio están centralizadas y documentadas al inicio de **`src/rules.js`** dentro del objeto `RULES_CONFIG`:
+
+```javascript
+// Archivo: src/rules.js (Líneas 11–36)
+const RULES_CONFIG = {
+  CAMPUS_OPEN_TIME: "06:00",
+  CAMPUS_CLOSE_TIME: "22:00",
+  MAX_BOOKING_DURATION_MINUTES: 240, // <-- Cambiar ej. a 120 para limitar reservas a 2 horas
+  MIN_BOOKING_DURATION_MINUTES: 15,
+  MAX_CAPACITY_OVERFLOW_RATIO: 1.0,  // <-- Cambiar ej. a 0.8 para permitir solo 80% de aforo
+  BLOCK_USER_WITH_OVERDUE_EQUIPMENT: true,
+  MAX_ACTIVE_BOOKINGS_PER_USER_PER_DAY: 2
+};
+```
+
+---
+
+## 🚀 Instalación y Ejecución Local
+
+1. Clonar el repositorio:
+   ```bash
+   git clone https://github.com/lopezvargaserick14-cell/Hackaton_CampusAtlas.git
+   cd Hackaton_CampusAtlas
+   ```
+2. Crear el archivo `.env` en la raíz (usando `.env.example` como plantilla):
    ```env
-   GEMINI_API_KEY=AIzaSyTuClaveRealAqui...
+   GEMINI_API_KEY=tu_clave_de_google_gemini_aqui
    GEMINI_MODEL=gemini-2.5-flash
    PORT=3000
    ```
-   *(El sistema detecta los cambios en `.env` en caliente sin siquiera reiniciar el servidor).*
-
-2. **Iniciar el servidor (Cero dependencias externas requeridas):**
+   > 🔒 **Seguridad**: `.env` está incluido en `.gitignore` y nunca se expone en el frontend ni en el historial de Git.
+3. Iniciar el servidor (cero dependencias externas, Node.js nativo):
    ```bash
-   node server.js
+   npm start
    ```
-
-3. **Abrir la Consola de Control en el navegador:**
-   Ingresa a **[http://localhost:3000](http://localhost:3000)**
-
----
-
-## 🧠 Rol de la IA como Modelo de Seguridad (`src/geminiSecurity.js`)
-
-1. **Auditoría Cognitiva de Solicitudes:** Evalúa el propósito de cada reserva buscando riesgos físicos (ej. sobrecarga eléctrica, equipos peligrosos, mal uso de laboratorios) y bloquea preventivamente la asignación (`BLOQUEADO_POR_IA`) incluso si cumple horario y aforo.
-2. **Motor de Continuidad y Reubicación Segura:** Cuando un espacio está bloqueado por una incidencia crítica o conflicto de aforo/horario, recomienda automáticamente el espacio alternativo ideal del inventario real con un botón de reubicación en 1 clic.
-3. **Resiliencia Zero-Trust (Fallback Controlado):** Si la red falla o no hay API Key configurada, el sistema continúa operando de forma segura respaldado por el motor determinista (`src/rules.js`).
-
----
-
-## ⚖️ Reglas de Negocio Implementadas (`src/rules.js`)
-
-Para el **Reto de Modificación en Vivo (15 puntos en < 3 minutos)**, todas las constantes están centralizadas en el objeto `RULES_CONFIG` dentro de `src/rules.js`:
-
-* **RN-01 (Seguridad Operativa y Cruce de Incidencias):** Prohibido asignar espacios en `MANTENIMIENTO`, `BLOQUEADO_SEGURIDAD` o con incidencias abiertas de severidad `CRITICA`.
-* **RN-02 (Seguridad de Aforo y Uso Eficiente):** Prohibido superar el aforo máximo (`MAX_CAPACITY_PERCENTAGE = 100%`) o subutilizar aulas grandes con menos del `MIN_OCCUPANCY_PERCENTAGE = 20%`.
-* **RN-03 (Integridad Horaria y Cero Solapamiento):** Validación matemática de colisión de rangos horarios $[inicio_A < fin_B \land fin_A > inicio_B]$, horario del campus (`06:00` a `22:00`) y duración permitida (`30` a `240` min).
-* **Sanitización Automática de Casos Borde:** Filtra y aísla en cuarentena registros corruptos del dataset de origen sin interrumpir la aplicación.
+4. Abrir en el navegador: **`http://localhost:3000`**

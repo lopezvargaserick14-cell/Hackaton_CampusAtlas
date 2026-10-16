@@ -3,8 +3,8 @@
  * CAMPUSSHIELD AI - MOTOR DE SEGURIDAD OPERATIVA CON GOOGLE GEMINI API
  * ============================================================================
  * 1. Audita reservas de espacios (Módulo 1).
- * 2. Realiza Triaje Inteligente de Incidencias (Módulo 3) con Auto-Lockdown
- *    de espacios o equipos cuando detecta riesgo crítico.
+ * 2. Realiza Triaje Inteligente de Incidencias (Módulo 3) con Auto-Lockdown.
+ * 3. Responde consultas en tiempo real en el Chat Copiloto del Campus.
  * ============================================================================
  */
 
@@ -100,9 +100,6 @@ Si "activityTitle" describe riesgo eléctrico, fuego, soldadura sin ventilación
   }
 }
 
-/**
- * Triaje Inteligente de Incidencias con Auto-Lockdown (Módulo 3)
- */
 async function triageIncidentWithGemini(incidentPayload, currentState) {
   const apiKey = (process.env.GEMINI_API_KEY || "").trim();
   const model = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
@@ -173,7 +170,84 @@ Responde ÚNICAMENTE en JSON válido:
   }
 }
 
+/**
+ * Copiloto Conversacional de Asistencia con IA para consultar el estado en vivo del campus
+ */
+async function askCampusCopilotWithGemini(question, currentState, quarantinedRecords) {
+  const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+  const model = (process.env.GEMINI_MODEL || "gemini-2.5-flash").trim();
+
+  if (!apiKey || apiKey === "TU_API_KEY_DE_GEMINI_AQUI") {
+    return {
+      answer:
+        "Modo local activo: Configura GEMINI_API_KEY en .env para respuestas conversacionales con IA.",
+      suggestedAction: null
+    };
+  }
+
+  const prompt = `
+Eres CampusAtlas Copilot, el asistente inteligente de operaciones y seguridad de Campuslands (Sede Zona Franca Santander).
+Responde la pregunta del usuario basándote ESTRICTAMENTE en estos datos reales en vivo del campus:
+
+SALONES Y ESPACIOS:
+${JSON.stringify(currentState.spaces)}
+
+RESERVAS ACTIVAS HOY:
+${JSON.stringify((currentState.bookings || []).filter((b) => b.status === "ACTIVA"))}
+
+RECURSOS Y EQUIPOS TI (PRÉSTAMOS Y MORA):
+${JSON.stringify(currentState.resources)}
+
+INCIDENCIAS ABIERTAS:
+${JSON.stringify((currentState.incidents || []).filter((i) => i.status === "ABIERTA"))}
+
+REGISTROS CON ERROR AISLADOS (CASOS BORDE):
+${JSON.stringify(quarantinedRecords)}
+
+PREGUNTA DEL USUARIO:
+"${question}"
+
+Responde en JSON válido con esta estructura:
+{
+  "answer": "Respuesta clara, directa, amigable y precisa con datos exactos (horarios, capacidades, nombres de salones o equipos). Máximo 3-4 oraciones.",
+  "highlightedSpaceId": "ID de un salón relevante mencionado (ej. SP-ARTEMIS) o null"
+}
+`;
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+    model
+  )}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  try {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.25, responseMimeType: "application/json" }
+      })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const parsed = JSON.parse(data?.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+    return {
+      answer: parsed.answer || "Consulta procesada sobre el estado actual del campus.",
+      highlightedSpaceId: parsed.highlightedSpaceId || null
+    };
+  } catch (err) {
+    return {
+      answer: `Estado rápido local: Hay ${
+        currentState.spaces.filter((s) => s.status === "DISPONIBLE").length
+      } salones libres hoy y ${
+        (currentState.incidents || []).filter((i) => i.status === "ABIERTA").length
+      } incidencias activas.`,
+      highlightedSpaceId: null
+    };
+  }
+}
+
 module.exports = {
   evaluateBookingSecurityWithGemini,
-  triageIncidentWithGemini
+  triageIncidentWithGemini,
+  askCampusCopilotWithGemini
 };
