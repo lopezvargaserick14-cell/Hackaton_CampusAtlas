@@ -65,7 +65,7 @@ function runPythonEngine(inputPayload) {
       const timer = setTimeout(() => {
         py.kill();
         resolve(null);
-      }, 4000);
+      }, 9000);
 
       py.stdout.on("data", (chunk) => {
         out += chunk.toString("utf8");
@@ -170,6 +170,9 @@ const server = http.createServer(async (req, res) => {
   try {
     const parsedUrl = new URL(req.url, `http://${req.headers.host}`);
     const pathname = parsedUrl.pathname;
+    if (!pathname.startsWith("/assets/") && pathname !== "/favicon.ico") {
+      console.log(`[${new Date().toLocaleTimeString("es-CO")}] ${req.method} ${pathname}`);
+    }
 
     // GET /api/state
     if (req.method === "GET" && pathname === "/api/state") {
@@ -488,7 +491,11 @@ const server = http.createServer(async (req, res) => {
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
       const ext = path.extname(filePath).toLowerCase();
       const contentType = MIME_TYPES[ext] || "application/octet-stream";
-      res.writeHead(200, { ...SECURITY_HEADERS, "Content-Type": contentType });
+      res.writeHead(200, {
+        ...SECURITY_HEADERS,
+        "Content-Type": contentType,
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      });
       return fs.createReadStream(filePath).pipe(res);
     }
 

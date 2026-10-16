@@ -140,11 +140,6 @@ function renderKpis() {
   const activeBookings = bookings.filter((b) => b.status === "ACTIVA");
   const openIncidents = incidents.filter((i) => i.status === "ABIERTA").length;
   const problemSpaces = spaces.filter((s) => s.status !== "DISPONIBLE").length;
-
-  const totalCap = spaces.reduce((acc, s) => acc + (s.capacity || 0), 0) || 1;
-  const occupiedPax = activeBookings.reduce((acc, b) => acc + (b.attendees || 0), 0);
-  const occPct = Math.min(100, Math.round((occupiedPax / totalCap) * 100));
-
   const elFree = document.getElementById("kpiFreeSpaces");
   if (elFree) elFree.textContent = freeSpaces;
   const elTot = document.getElementById("kpiTotalSpaces");
@@ -155,10 +150,6 @@ function renderKpis() {
   if (elSec) elSec.textContent = openIncidents + problemSpaces;
   const elBlk = document.getElementById("kpiBlockedRooms");
   if (elBlk) elBlk.textContent = `${problemSpaces} con novedad`;
-  const elOcc = document.getElementById("kpiOccupancyRate");
-  if (elOcc) elOcc.textContent = `${occPct}%`;
-  const elPax = document.getElementById("kpiTotalPax");
-  if (elPax) elPax.textContent = `${occupiedPax} personas`;
 
   const dbBadge = document.getElementById("dbCountBadge");
   if (dbBadge) dbBadge.textContent = bookings.length;
@@ -700,18 +691,46 @@ function exportReportCSV() {
   window.location.href = "/api/export/csv";
 }
 
+function formatChatReply(text) {
+  if (!text) return "";
+  let formatted = escapeHtml(text);
+  // Negrita **texto**
+  formatted = formatted.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  // Saltos de línea
+  formatted = formatted.replace(/\n/g, "<br/>");
+  return formatted;
+}
+
 function toggleChat() {
   const drawer = document.getElementById("chatDrawer");
+  const backdrop = document.getElementById("chatBackdrop");
   if (!drawer) return;
-  drawer.classList.toggle("open");
-  if (drawer.classList.contains("open")) {
-    document.getElementById("chatInput")?.focus();
+  const isOpen = drawer.classList.toggle("open");
+  if (backdrop) backdrop.style.display = isOpen ? "block" : "none";
+  if (isOpen) {
+    setTimeout(() => document.getElementById("chatInput")?.focus(), 120);
   }
 }
 
 function askQuick(q) {
   const drawer = document.getElementById("chatDrawer");
-  if (drawer && !drawer.classList.contains("open")) drawer.classList.add("open");
+  if (drawer && !drawer.classList.contains("open")) {
+    toggleChat();
+  }
+  const input = document.getElementById("chatInput");
+  if (input) input.value = q;
+  submitChat(new Event("submit"));
+}
+
+function submitQuickChat() {
+  const quickInput = document.getElementById("quickChatInput");
+  const q = (quickInput?.value || "").trim();
+  if (!q) return;
+  quickInput.value = "";
+  const drawer = document.getElementById("chatDrawer");
+  if (drawer && !drawer.classList.contains("open")) {
+    toggleChat();
+  }
   const input = document.getElementById("chatInput");
   if (input) input.value = q;
   submitChat(new Event("submit"));
@@ -729,7 +748,7 @@ async function submitChat(e) {
   msgs.innerHTML += `<div class="bubble user">${escapeHtml(q)}</div>`;
 
   const loadId = "load-" + Date.now();
-  msgs.innerHTML += `<div id="${loadId}" class="bubble bot">⏳ Consultando estado del campus...</div>`;
+  msgs.innerHTML += `<div id="${loadId}" class="bubble bot">⏳ Pensando con IA... analizando salones y seguridad...</div>`;
   msgs.scrollTop = msgs.scrollHeight;
   if (btn) btn.disabled = true;
 
@@ -742,11 +761,16 @@ async function submitChat(e) {
     const data = await res.json();
     const el = document.getElementById(loadId);
     if (el) {
-      el.textContent = data.reply || data.message || "Consulta completada.";
+      const replyHtml = formatChatReply(data.reply || data.message || "Consulta completada.");
+      const badgeHtml =
+        data.engine === "PYTHON_GEMINI_AI"
+          ? `<small style="display:block;margin-top:6px;opacity:0.75;font-size:0.68rem;color:var(--campus-mint);">⚡ Respuesta generada con IA (Google Gemini + Python Core)</small>`
+          : `<small style="display:block;margin-top:6px;opacity:0.75;font-size:0.68rem;color:var(--campus-cyan);">⚡ Motor Analítico en Python</small>`;
+      el.innerHTML = `${replyHtml}${badgeHtml}`;
     }
   } catch (err) {
     const el = document.getElementById(loadId);
-    if (el) el.textContent = "Error al consultar el asistente.";
+    if (el) el.textContent = "Error al consultar el asistente. Inténtalo de nuevo.";
   } finally {
     if (btn) btn.disabled = false;
     msgs.scrollTop = msgs.scrollHeight;

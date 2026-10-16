@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles.css?v=3.1" />
 </head>
 <body>
   <!-- Fondo Espacial Campuslands -->
@@ -62,9 +62,9 @@
       </div>
     </header>
 
-    <!-- 4 CONTADORES MINIMALISTAS (KPIS) -->
+    <!-- 3 CONTADORES MINIMALISTAS (KPIS REALES Y MEDIBLES) -->
     <section class="kpi-strip" aria-label="Indicadores de Espacios">
-      <div class="kpi-box prio-low" onclick="setFilterMode('VALIDA')">
+      <div class="kpi-box prio-low" onclick="setFilterMode('VALIDA')" title="Filtrar salones disponibles">
         <span class="kpi-title">SALONES DISPONIBLES</span>
         <div class="kpi-main">
           <strong id="kpiFreeSpaces">5</strong>
@@ -72,30 +72,38 @@
         </div>
       </div>
 
-      <div class="kpi-box prio-info" onclick="setFilterMode('OCUPADO')">
+      <div class="kpi-box prio-info" onclick="setFilterMode('OCUPADO')" title="Filtrar salones ocupados">
         <span class="kpi-title">OCUPADOS / EN USO</span>
         <div class="kpi-main">
           <strong id="kpiActiveBookings">3</strong>
-          <small>en curso</small>
+          <small>en curso hoy</small>
         </div>
       </div>
 
-      <div class="kpi-box prio-high" onclick="switchView('view-security')">
+      <div class="kpi-box prio-high" onclick="switchView('view-security')" title="Ver salones con novedades o fallas">
         <span class="kpi-title">PROBLEMAS EN INSTALACIÓN</span>
         <div class="kpi-main">
           <strong id="kpiSecurityAlerts">2</strong>
           <small id="kpiBlockedRooms">salones afectados</small>
         </div>
       </div>
-
-      <div class="kpi-box prio-mint" onclick="switchView('view-database')">
-        <span class="kpi-title">OCUPACIÓN CAMPUS</span>
-        <div class="kpi-main">
-          <strong id="kpiOccupancyRate">42%</strong>
-          <small id="kpiTotalPax">83 personas</small>
-        </div>
-      </div>
     </section>
+
+    <!-- BARRA RÁPIDA DE CONSULTA CON IA -->
+    <div class="ai-quick-bar">
+      <div class="ai-quick-icon">🤖</div>
+      <div class="ai-quick-input-wrap">
+        <input
+          type="text"
+          id="quickChatInput"
+          placeholder="Pregúntale al Asistente IA: '¿Qué aulas están libres a las 3?' o 'Recomiéndame un salón para 25 personas'..."
+          onkeydown="if(event.key === 'Enter'){ submitQuickChat(); }"
+        />
+        <button type="button" class="btn-ai-ask" onclick="submitQuickChat()">
+          Consultar IA
+        </button>
+      </div>
+    </div>
 
     <!-- INDICADOR DE CARGA Y MENSAJES -->
     <div id="globalLoader" class="loader-bar" style="display: none;" role="status">
@@ -420,12 +428,16 @@
     </form>
   </aside>
 
+  <!-- Backdrop translúcido al abrir el Asistente -->
+  <div id="chatBackdrop" class="chat-backdrop" onclick="toggleChat()" style="display: none;"></div>
+
   <!-- Botón Flotante para abrir el Asistente en cualquier momento -->
-  <button type="button" class="chat-fab" onclick="toggleChat()" title="Consultar al Asistente">
+  <button type="button" class="chat-fab" onclick="toggleChat()" title="Consultar al Asistente con IA">
+    <span class="chat-fab-pulse"></span>
     <img src="/assets/casco_azul.svg" alt="" />
-    <span>Asistente</span>
+    <span>Asistente IA</span>
   </button>
 
-  <script src="/app.js"></script>
+  <script src="/app.js?v=3.1"></script>
 </body>
 </html>

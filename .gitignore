@@ -12,3 +12,5 @@ Thumbs.db
 .claude/
 .cursor/
 skills-lock.json
+__pycache__/
+*.pyc
