@@ -1,210 +1,162 @@
 {
   "metadata": {
-    "campus": "Campuslands HQ — Nodo Bucaramanga (Zona Franca Santander)",
-    "coordinates": "LAT 7.0653° N // LON 73.1054° W",
-    "version": "2.0-campuslands-official",
-    "lastUpdated": "2026-10-16T07:25:00-05:00"
+    "campus": "Campuslands — Bucaramanga",
+    "operatingHours": "06:00 - 22:00",
+    "lastUpdated": "2026-10-16T08:15:00-05:00"
   },
   "spaces": [
     {
       "id": "SP-APOLO",
-      "name": "Salón Apolo (Misión Full-Stack)",
-      "type": "SALON_RUTA",
-      "floor": "Zona Norte • Nivel Principal",
+      "name": "Nave Apolo",
+      "type": "SALA_ENTRENAMIENTO",
+      "zone": "Nivel 1 • Sector Norte",
       "capacity": 35,
       "status": "DISPONIBLE",
-      "securityLevel": "ESTANDAR",
-      "equipmentIncluded": ["35 Workstations Ubuntu", "Pantalla Interactiva 85\"", "Aire Acondicionado Dual", "Red Fibra Dedicada"]
+      "lockReason": null
     },
     {
       "id": "SP-ARTEMIS",
-      "name": "Salón Artemis (Misión Backend & Cloud)",
-      "type": "SALON_RUTA",
-      "floor": "Zona Norte • Nivel Principal",
-      "capacity": 32,
+      "name": "Nave Artemis",
+      "type": "SALA_ENTRENAMIENTO",
+      "zone": "Nivel 1 • Sector Central",
+      "capacity": 35,
       "status": "DISPONIBLE",
-      "securityLevel": "ESTANDAR",
-      "equipmentIncluded": ["32 Workstations Dev", "Proyector Láser HD", "Climatización Inteligente", "Tablero Acrílico"]
+      "lockReason": null
     },
     {
       "id": "SP-SPUTNIK",
-      "name": "Salón Sputnik (Misión IA & Data)",
-      "type": "LABORATORIO_IA",
-      "floor": "Zona Tech • Sector Central",
-      "capacity": 28,
-      "status": "BLOQUEADO_SEGURIDAD",
-      "securityLevel": "RESTRINGIDO",
-      "equipmentIncluded": ["28 Nodos GPU Local", "UPS Respaldo Crítico", "Pantalla 4K"],
-      "lockReason": "INC-001: Sobrecalentamiento eléctrico en UPS del rack trasero (Bloqueo activo por seguridad física)"
+      "name": "Nave Sputnik",
+      "type": "SALA_ENTRENAMIENTO",
+      "zone": "Nivel 1 • Sector Sur",
+      "capacity": 35,
+      "status": "DISPONIBLE",
+      "lockReason": null
     },
     {
       "id": "SP-CORVUS",
-      "name": "Salón Corvus (Misión Software Core)",
-      "type": "SALON_RUTA",
-      "floor": "Zona Sur • Sector Desarrollo",
-      "capacity": 26,
-      "status": "MANTENIMIENTO",
-      "securityLevel": "ESTANDAR",
-      "equipmentIncluded": ["26 Workstations", "TV 70\"", "Aire Acondicionado (En revisión)"],
-      "lockReason": "Mantenimiento técnico en ducto de aire acondicionado y puntos de red"
+      "name": "Auditorio Corvus",
+      "type": "AUDITORIO",
+      "zone": "Planta Central",
+      "capacity": 80,
+      "status": "BLOQUEADO_SEGURIDAD",
+      "lockReason": "INC-101: Revisión eléctrica en rack principal"
     },
     {
       "id": "SP-SER-01",
-      "name": "Sala Inglés & Habilidades del Ser",
-      "type": "SALA_HABILIDADES",
-      "floor": "Zona Adaptativa • Nivel 1",
-      "capacity": 18,
+      "name": "Sala del Ser & Inglés",
+      "type": "ZONA_BIENESTAR",
+      "zone": "Nivel 2 • Ala Este",
+      "capacity": 20,
       "status": "DISPONIBLE",
-      "securityLevel": "ESTANDAR",
-      "equipmentIncluded": ["Sistema de Audio Conversacional", "Pantalla Smart 65\"", "Mobiliario Colaborativo"]
+      "lockReason": null
     },
     {
       "id": "SP-HUNTERS-01",
-      "name": "Cabina Hunters #1 (Code Review & Pitch)",
-      "type": "CUBICULO",
-      "floor": "Zona Coworking & Empleabilidad",
+      "name": "Cabina Review #1",
+      "type": "CABINA_REVIEW",
+      "zone": "Nivel 2 • Sector Evaluaciones",
       "capacity": 6,
       "status": "DISPONIBLE",
-      "securityLevel": "ESTANDAR",
-      "equipmentIncluded": ["Monitor Externo 32\"", "Cámara Conferencia HD", "Aislamiento Acústico"]
+      "lockReason": null
     },
     {
       "id": "SP-HOUSTON",
-      "name": "Auditorio Houston (Demo Day & Hackatón)",
-      "type": "AUDITORIO",
-      "floor": " Zona Central Zona Franca",
-      "capacity": 120,
-      "status": "DISPONIBLE",
-      "securityLevel": "ALTA_VIGILANCIA",
-      "equipmentIncluded": ["Pantalla LED Gigante", "Sonido Line Array", "4 Micrófonos Inalámbricos", "Iluminación Escénica"]
-    },
-    {
-      "id": "SP-CORRUPT-01",
-      "name": "Cápsula Fantasma (Caso Borde Dataset)",
-      "type": "SALON_RUTA",
-      "floor": "Nivel Desconocido",
-      "capacity": -15,
-      "status": "DISPONIBLE",
-      "securityLevel": "ESTANDAR",
-      "equipmentIncluded": []
-    },
-    {
-      "id": "SP-CORRUPT-02",
-      "name": "",
-      "type": "SIN_TIPO",
-      "floor": "N/A",
-      "capacity": 0,
-      "status": "ESTADO_CORRUPTO_999",
-      "securityLevel": "ESTANDAR",
-      "equipmentIncluded": []
+      "name": "Sala Comando Houston",
+      "type": "SALA_REUNIONES",
+      "zone": "Nivel 2 • Dirección",
+      "capacity": 14,
+      "status": "MANTENIMIENTO",
+      "lockReason": "Actualización de red fibra óptica"
     }
   ],
   "bookings": [
     {
       "id": "RES-101",
       "spaceId": "SP-APOLO",
-      "spaceName": "Salón Apolo (Misión Full-Stack)",
-      "requesterName": "Trainer Carlos Rueda",
+      "spaceName": "Nave Apolo",
+      "requesterName": "Trainer Miguel Rueda",
       "requesterRole": "TRAINER",
-      "activityTitle": "Bloque M1: Entrenamiento Intensivo Node.js & Microservicios (Cohorte Apolo)",
+      "activityTitle": "Entrenamiento Intensivo Backend Node.js",
       "attendees": 30,
       "date": "2026-10-16",
       "startTime": "06:00",
-      "endTime": "10:00",
+      "endTime": "09:30",
       "status": "ACTIVA",
-      "aiSecurityAudit": {
-        "verdict": "APROBADO",
-        "riskLevel": "BAJO",
-        "score": 97,
-        "summary": "Jornada M1 oficial (06:00 - 10:00). Ocupación segura del 86% (30/35 campers) sin anomalías."
-      },
+      "riskLevel": "BAJO",
+      "securityNote": "Reserva verificada dentro de parámetros seguros.",
       "createdAt": "2026-10-16T05:50:00-05:00"
     },
     {
       "id": "RES-102",
-      "spaceId": "SP-HUNTERS-01",
-      "spaceName": "Cabina Hunters #1 (Code Review & Pitch)",
-      "requesterName": "Camper Valentina Gómez",
-      "requesterRole": "CAMPER",
-      "activityTitle": "Simulacro de Entrevista Técnica en Inglés — Campuslands Emplea",
-      "attendees": 5,
+      "spaceId": "SP-SPUTNIK",
+      "spaceName": "Nave Sputnik",
+      "requesterName": "Trainer Diego Rojas",
+      "requesterRole": "TRAINER",
+      "activityTitle": "Arquitectura de Software & Bases de Datos",
+      "attendees": 32,
       "date": "2026-10-16",
-      "startTime": "08:30",
-      "endTime": "10:00",
+      "startTime": "10:00",
+      "endTime": "13:30",
       "status": "ACTIVA",
-      "aiSecurityAudit": {
-        "verdict": "APROBADO",
-        "riskLevel": "BAJO",
-        "score": 95,
-        "summary": "Uso óptimo de Cabina Hunters (5/6 asistentes) para preparación de empleabilidad internacional."
-      },
-      "createdAt": "2026-10-16T06:20:00-05:00"
+      "riskLevel": "BAJO",
+      "securityNote": "Aforo al 91%, acceso autorizado.",
+      "createdAt": "2026-10-16T07:20:00-05:00"
     },
     {
-      "id": "RES-CORRUPT-99",
-      "spaceId": "SP-ARTEMIS",
-      "spaceName": "Salón Artemis",
-      "requesterName": "Registro Migración Antigua",
-      "requesterRole": "CAMPER",
-      "activityTitle": "Reserva con rango horario invertido (Caso Borde)",
-      "attendees": 22,
+      "id": "RES-103",
+      "spaceId": "SP-SER-01",
+      "spaceName": "Sala del Ser & Inglés",
+      "requesterName": "Teacher Laura Gómez",
+      "requesterRole": "TEAM_EDUCACION",
+      "activityTitle": "Conversational English & Mock Interviews",
+      "attendees": 16,
       "date": "2026-10-16",
       "startTime": "14:00",
-      "endTime": "10:00",
+      "endTime": "17:30",
       "status": "ACTIVA",
-      "createdAt": "2026-10-15T22:00:00-05:00"
-    }
-  ],
-  "resources": [
-    {
-      "id": "EQ-MAC-01",
-      "name": "MacBook Pro M3 14\" — Kit Movilidad #01",
-      "category": "COMPUTO",
-      "assignedSpaceId": null,
-      "status": "DISPONIBLE",
-      "borrowedBy": null,
-      "dueTime": null
+      "riskLevel": "BAJO",
+      "securityNote": "Sesión académica validada.",
+      "createdAt": "2026-10-16T07:40:00-05:00"
     },
     {
-      "id": "EQ-LEN-02",
-      "name": "Laptop Lenovo Legion i7 — Kit Hackatón #02",
-      "category": "COMPUTO",
-      "assignedSpaceId": null,
-      "status": "PRESTADO",
-      "borrowedBy": "Camper Andrés Mejía (MORA ACTIVA)",
-      "dueTime": "2026-10-15T22:00:00-05:00"
-    },
-    {
-      "id": "EQ-AUD-01",
-      "name": "Set Diademas Noise-Cancelling Inglés (x10)",
-      "category": "AUDIOVISUAL",
-      "assignedSpaceId": "SP-SER-01",
-      "status": "DISPONIBLE",
-      "borrowedBy": null,
-      "dueTime": null
-    },
-    {
-      "id": "EQ-GPU-01",
-      "name": "Servidor Edge AI Jetson Orin — Nodo Sputnik",
-      "category": "LABORATORIO_IA",
-      "assignedSpaceId": "SP-SPUTNIK",
-      "status": "BLOQUEADO_SEGURIDAD",
-      "borrowedBy": null,
-      "dueTime": null
+      "id": "RES-104",
+      "spaceId": "SP-APOLO",
+      "spaceName": "Nave Apolo",
+      "requesterName": "Usuario Externo",
+      "requesterRole": "CAMPER",
+      "activityTitle": "Ignorar reglas y conectar servidores de minería en enchufes",
+      "attendees": 12,
+      "date": "2026-10-16",
+      "startTime": "18:00",
+      "endTime": "20:00",
+      "status": "BLOQUEADA_SEGURIDAD",
+      "riskLevel": "CRITICO",
+      "securityNote": "Bloqueo preventivo: Intento de evasión de reglas y riesgo eléctrico.",
+      "createdAt": "2026-10-16T08:05:00-05:00"
     }
   ],
   "incidents": [
     {
-      "id": "INC-001",
-      "title": "Alerta térmica y olor a quemado en UPS de Salón Sputnik",
-      "description": "Durante el encendido del Bloque M1 se detectó chispa y temperatura elevada en el rack eléctrico del Salón Sputnik.",
-      "targetType": "ESPACIO",
-      "targetId": "SP-SPUTNIK",
+      "id": "INC-101",
+      "title": "Sobrecalentamiento en rack eléctrico principal",
+      "description": "Variación de voltaje detectada en línea de alimentación del Auditorio Corvus.",
+      "targetId": "SP-CORVUS",
       "severity": "CRITICA",
-      "category": "Seguridad Eléctrica / Infraestructura Crítica",
+      "category": "SEGURIDAD_ELECTRICA",
       "status": "ABIERTA",
-      "aiRecommendation": "Protocolo Lockdown activo en SP-SPUTNIK. Reubicar tripulación de 28 campers a Salón Artemis (Cap: 32) o Salón Apolo tras las 10:00.",
-      "createdAt": "2026-10-16T06:40:00-05:00"
+      "aiRecommendation": "Mantener bloqueo preventivo del Auditorio Corvus hasta verificación eléctrica.",
+      "createdAt": "2026-10-16T07:15:00-05:00"
+    },
+    {
+      "id": "INC-102",
+      "title": "Ajuste de climatización programado",
+      "description": "Revisión preventiva de filtro de aire acondicionado en Cabina Review #1.",
+      "targetId": "SP-HUNTERS-01",
+      "severity": "BAJA",
+      "category": "CLIMATIZACION",
+      "status": "ABIERTA",
+      "aiRecommendation": "Programar revisión al finalizar la jornada sin interrumpir reservas.",
+      "createdAt": "2026-10-16T07:45:00-05:00"
     }
   ]
 }

@@ -3,642 +3,416 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CampusAtlas | Sistema Central de Gestión Operativa — Campuslands</title>
+  <title>CampusAtlas | Espacios, Reservas & Seguridad — Campuslands</title>
   <link rel="icon" type="image/svg+xml" href="/assets/casco_azul.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
-  <!-- Fondo Cósmico Animado con Keyframes -->
-  <div class="cosmic-backdrop" aria-hidden="true">
-    <div class="nebula-orb orb-cyan"></div>
-    <div class="nebula-orb orb-teal"></div>
-    <div class="nebula-orb orb-purple"></div>
-    <div class="star-grid"></div>
+  <!-- Fondo Espacial Minimalista Campuslands -->
+  <div class="cosmic-bg" aria-hidden="true">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
   </div>
 
-  <!-- Contenedor de Notificaciones Toast Flotantes -->
+  <!-- Contenedor de Toasts -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-  <div class="app-layout">
-    <!-- SIDEBAR DE NAVEGACIÓN (Desktop + Drawer / Bottom Bar en Móvil) -->
-    <aside class="sidebar">
-      <div class="brand-header">
-        <div class="brand-logo-wrap">
-          <img src="/assets/casco_azul.svg" alt="Casco Campuslands" class="astronaut-helmet" />
-          <span class="orbit-ring"></span>
+  <div class="app-shell">
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR MINIMALISTA -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo-badge">
+          <img src="/assets/casco_azul.svg" alt="Campuslands" class="helmet-icon" />
         </div>
-        <div class="brand-titles">
-          <img src="/assets/Logo-texto-campus.svg" alt="Campuslands" class="brand-wordmark" />
-          <span class="brand-subtag">ATLAS • MISSION CONTROL</span>
-        </div>
-      </div>
-
-      <!-- Estado de Gemini AI en vivo -->
-      <div class="ai-core-card" id="aiCoreCard">
-        <div class="ai-core-header">
-          <span class="pulse-dot online" id="aiPulseDot"></span>
-          <span class="ai-core-title" id="aiStatusTitle">GEMINI 2.5 FLASH</span>
-        </div>
-        <p class="ai-core-desc" id="aiStatusDesc">Escudo Cognitivo Zero-Trust Activo</p>
-        <div class="ai-core-meta">
-          <span class="mono-tag">API: .env Protegida</span>
-          <span class="mono-tag">06:00–22:00</span>
+        <div class="brand-meta">
+          <img src="/assets/Logo-texto-campus.svg" alt="Campuslands" class="brand-logo-text" />
+          <span class="brand-tag">SPACE &amp; SECURITY CONTROL</span>
         </div>
       </div>
 
-      <!-- Menú de Módulos -->
-      <nav class="side-nav" aria-label="Navegación Principal">
-        <button class="nav-btn active" data-view="view-overview" onclick="switchView('view-overview')">
-          <span class="nav-icon">🛰️</span>
-          <span class="nav-text">Centro de Mando & Mapa</span>
+      <nav class="nav-pills" aria-label="Navegación">
+        <button class="nav-pill active" data-view="view-spaces" onclick="switchView('view-spaces')">
+          🛰️ Espacios &amp; Reservas
         </button>
-        <button class="nav-btn" data-view="view-calendar" onclick="switchView('view-calendar')">
-          <span class="nav-icon">📅</span>
-          <span class="nav-text">Calendario & Reservas</span>
+        <button class="nav-pill" data-view="view-calendar" onclick="switchView('view-calendar')">
+          📅 Calendario
         </button>
-        <button class="nav-btn" data-view="view-resources" onclick="switchView('view-resources')">
-          <span class="nav-icon">💻</span>
-          <span class="nav-text">Inventario & Préstamos TI</span>
-          <span class="nav-badge danger" id="navOverdueBadge" title="Equipos vencidos">1</span>
+        <button class="nav-pill" data-view="view-database" onclick="switchView('view-database')">
+          🗄️ Base de Datos &amp; Analítica
+          <span class="pill-count" id="dbCountBadge">0</span>
         </button>
-        <button class="nav-btn" data-view="view-incidents" onclick="switchView('view-incidents')">
-          <span class="nav-icon">🚨</span>
-          <span class="nav-text">Incidencias & Triaje IA</span>
-          <span class="nav-badge danger" id="navIncidentBadge">2</span>
-        </button>
-        <button class="nav-btn" data-view="view-errors" onclick="switchView('view-errors')">
-          <span class="nav-icon">⚠️</span>
-          <span class="nav-text">Registros con Error</span>
-          <span class="nav-badge warning" id="navErrorBadge">3</span>
+        <button class="nav-pill" data-view="view-security" onclick="switchView('view-security')">
+          🛡️ Seguridad
+          <span class="pill-count danger" id="secCountBadge">0</span>
         </button>
       </nav>
 
-      <!-- Tarjeta Guía Defensa en Vivo (Regla en < 3 min) -->
-      <div class="defense-guide-box">
-        <div class="defense-header">
-          <span class="defense-icon">⚡</span>
-          <strong>Reto Jurado (&lt; 3 min)</strong>
+      <div class="nav-actions">
+        <div class="security-indicator" title="Motor de Seguridad Activo">
+          <span class="status-dot"></span>
+          <span>Escudo Activo</span>
         </div>
-        <p>Reglas centralizadas en <code>src/rules.js</code>:</p>
-        <ul class="rules-mini-list" id="sidebarRulesList">
-          <li>Horario: <strong>06:00 – 22:00</strong></li>
-          <li>Duración máx: <strong>240 min (4h)</strong></li>
-          <li>Aforo estricto: <strong>100% cap.</strong></li>
-          <li>Bloqueo por mora TI: <strong>ACTIVO</strong></li>
-        </ul>
-      </div>
-
-      <div class="sidebar-footer">
-        <button class="btn-action btn-csv" onclick="exportReportCSV()" title="Descargar reporte operativo en CSV">
-          <span>📥</span> Exportar Reporte CSV
+        <span class="live-clock" id="liveClock">08:00:00</span>
+        <button class="btn-icon-text" onclick="exportReportCSV()" title="Descargar Base de Datos en CSV">
+          📥 CSV
         </button>
-        <button class="btn-action btn-reset" onclick="resetDataset()" title="Restaurar dataset oficial de prueba">
-          <span>🔄</span> Restaurar Dataset Seed
+        <button class="btn-icon-text subtle" onclick="resetDataset()" title="Restaurar datos iniciales">
+          🔄
         </button>
       </div>
-    </aside>
+    </header>
 
-    <!-- ÁREA PRINCIPAL -->
-    <div class="main-wrapper">
-      <!-- BARRA SUPERIOR HERO + RELOJ + ALERTA DE MORA -->
-      <header class="topbar">
-        <div class="topbar-brand-info">
-          <div class="breadcrumb-pill">
-            <span class="live-beacon"></span>
-            <span>SEDE BUCARAMANGA • ZONA FRANCA SANTANDER</span>
-          </div>
-          <h1>Sistema Central de Gestión Operativa <span class="text-gradient">Campuslands</span></h1>
-        </div>
-
-        <div class="topbar-controls">
-          <div class="clock-widget">
-            <span class="clock-label">RELOJ OPERATIVO</span>
-            <span class="clock-value" id="liveClock">08:00:00</span>
-          </div>
-          <button class="btn-copilot-toggle" onclick="toggleCopilotDrawer()">
-            <span class="copilot-sparkle">✨</span>
-            <span>Chat Copiloto IA</span>
-          </button>
-        </div>
-      </header>
-
-      <!-- BANNER DE NOTIFICACIÓN DE PRÉSTAMOS VENCIDOS (Bonus + Regla de Negocio) -->
-      <div id="overdueAlertBanner" class="overdue-alert-banner" style="display: none;">
-        <div class="overdue-alert-left">
-          <span class="overdue- siren-icon">🔔</span>
-          <div>
-            <strong>NOTIFICACIÓN DE PRÉSTAMO VENCIDO (MORA ACTIVA):</strong>
-            <span id="overdueAlertText">Detectando equipos con tiempo de entrega vencido...</span>
-          </div>
-        </div>
-        <div class="overdue-alert-actions">
-          <button class="btn-xs btn-light" onclick="switchView('view-resources')">Gestionar Devolución</button>
+    <!-- CONTADORES MINIMALISTAS (4 KPIs) -->
+    <section class="kpi-strip" aria-label="Indicadores de Espacios y Seguridad">
+      <div class="kpi-box prio-low" onclick="quickFilterStatus('DISPONIBLE')">
+        <span class="kpi-title">SALONES LIBRES</span>
+        <div class="kpi-main">
+          <strong id="kpiFreeSpaces">0</strong>
+          <small id="kpiTotalSpaces">/ 7</small>
         </div>
       </div>
 
-      <!-- PANEL DE CONTADORES PRINCIPALES (KPIs requeridos por el jurado) -->
-      <section class="kpi-counters-grid" aria-label="Panel de Contadores Operativos">
-        <article class="kpi-card kpi-priority-low" onclick="applyQuickStatusFilter('DISPONIBLE')">
-          <div class="kpi-shimmer"></div>
-          <div class="kpi-icon-box green">🟢</div>
-          <div class="kpi-content">
-            <span class="kpi-label">ESPACIOS LIBRES</span>
-            <div class="kpi-number-row">
-              <strong class="kpi-value" id="kpiFreeSpaces">0</strong>
-              <span class="kpi-sub" id="kpiTotalSpaces">/ 7 válidos</span>
-            </div>
-            <span class="kpi-foot">Prioridad Baja • Listos para reserva</span>
-          </div>
-        </article>
-
-        <article class="kpi-card kpi-priority-medium" onclick="switchView('view-resources')">
-          <div class="kpi-shimmer"></div>
-          <div class="kpi-icon-box blue">💻</div>
-          <div class="kpi-content">
-            <span class="kpi-label">EQUIPOS PRESTADOS</span>
-            <div class="kpi-number-row">
-              <strong class="kpi-value" id="kpiBorrowedEquip">0</strong>
-              <span class="kpi-sub" id="kpiOverdueSub">1 vencido</span>
-            </div>
-            <span class="kpi-foot">Control de inventario y mora TI</span>
-          </div>
-        </article>
-
-        <article class="kpi-card kpi-priority-high" onclick="switchView('view-incidents')">
-          <div class="kpi-shimmer"></div>
-          <div class="kpi-icon-box red">🚨</div>
-          <div class="kpi-content">
-            <span class="kpi-label">INCIDENCIAS ABIERTAS</span>
-            <div class="kpi-number-row">
-              <strong class="kpi-value" id="kpiOpenIncidents">0</strong>
-              <span class="kpi-sub" id="kpiCriticalIncSub">1 crítica</span>
-            </div>
-            <span class="kpi-foot">Prioridad Crítica • Auto-Lockdown IA</span>
-          </div>
-        </article>
-
-        <article class="kpi-card kpi-priority-error" onclick="switchView('view-errors')">
-          <div class="kpi-shimmer"></div>
-          <div class="kpi-icon-box amber">⚠️</div>
-          <div class="kpi-content">
-            <span class="kpi-label">REGISTROS CON ERROR</span>
-            <div class="kpi-number-row">
-              <strong class="kpi-value" id="kpiErrorRecords">0</strong>
-              <span class="kpi-sub">Aislados</span>
-            </div>
-            <span class="kpi-foot">Datos inconsistentes en dataset</span>
-          </div>
-        </article>
-      </section>
-
-      <!-- BARRA GLOBAL DE BÚSQUEDA Y FILTROS (Por Estado, Tipo, Fecha y Texto) -->
-      <section class="filters-bar-card" aria-label="Filtros y Búsqueda Operativa">
-        <div class="filter-group search-group">
-          <label for="searchInput">🔍 Buscar salón, camper, equipo o ID</label>
-          <input
-            type="search"
-            id="searchInput"
-            placeholder="Ej: Apolo, Sputnik, Node.js, Camila, SP-CORRUPT..."
-            oninput="handleFiltersChange()"
-          />
-        </div>
-
-        <div class="filter-group">
-          <label for="filterStatus">Estado / Prioridad</label>
-          <select id="filterStatus" onchange="handleFiltersChange()">
-            <option value="ALL">Todos los estados</option>
-            <option value="DISPONIBLE">🟢 Disponible (Baja)</option>
-            <option value="OCUPADO_AHORA">🔵 Con Reserva Activa</option>
-            <option value="BLOQUEADO_SEGURIDAD">🔴 Bloqueado Seguridad (Crítica)</option>
-            <option value="MANTENIMIENTO">🟠 En Mantenimiento (Media)</option>
-            <option value="REGISTRO_CON_ERROR">⚠️ Registro con Error (Dataset)</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="filterType">Tipo de Espacio</label>
-          <select id="filterType" onchange="handleFiltersChange()">
-            <option value="ALL">Todos los tipos</option>
-            <option value="SALA_ENTRENAMIENTO">🚀 Sala de Entrenamiento (Apolo/Artemis/Sputnik)</option>
-            <option value="AUDITORIO">🌌 Auditorio (Corvus)</option>
-            <option value="CABINA_REVIEW">🎙️ Cabina de Review / Inglés</option>
-            <option value="SALA_REUNIONES">🛰️ Sala de Reuniones (Houston)</option>
-            <option value="ZONA_BIENESTAR">🧘 Zona Bienestar & Cowork</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="filterDate">Fecha de Operación</label>
-          <input
-            type="date"
-            id="filterDate"
-            value="2026-10-16"
-            onchange="handleFiltersChange()"
-          />
-        </div>
-
-        <div class="filter-actions">
-          <button class="btn-clear-filters" onclick="resetFilters()" title="Limpiar todos los filtros">
-            Limpiar Filtros
-          </button>
-        </div>
-      </section>
-
-      <!-- INDICADOR GLOBAL DE CARGA DE IA ("Cargando mientras la IA responde") -->
-      <div id="globalAiLoader" class="ai-loading-banner" style="display: none;" role="status" aria-live="assertive">
-        <div class="orbital-spinner">
-          <div class="ring ring-1"></div>
-          <div class="ring ring-2"></div>
-          <img src="/assets/casco_azul.svg" alt="" class="spinner-helmet" />
-        </div>
-        <div class="ai-loading-text">
-          <strong id="aiLoaderTitle">Cargando... Gemini 2.5 Flash está auditando la operación en tiempo real</strong>
-          <span id="aiLoaderSubtitle">Verificando reglas de dominio, cruces horarios, aforo e inyecciones de seguridad...</span>
+      <div class="kpi-box prio-info" onclick="switchView('view-database')">
+        <span class="kpi-title">RESERVAS ACTIVAS</span>
+        <div class="kpi-main">
+          <strong id="kpiActiveBookings">0</strong>
+          <small>en curso</small>
         </div>
       </div>
 
-      <!-- BANNER DE RESPUESTA CLARA DE ÉXITO O ERROR -->
-      <div id="operationFeedbackBanner" class="feedback-banner" style="display: none;" role="alert"></div>
-
-      <!-- ============================================================== -->
-      <!-- VISTA 1: CENTRO DE MANDO (MAPA 2D + RESERVA RÁPIDA + ERRORES) -->
-      <!-- ============================================================== -->
-      <main id="view-overview" class="view-section active">
-        <div class="overview-grid">
-          <!-- Columna Izquierda: Mapa Arquitectónico 2D Interactivo -->
-          <section class="glass-panel map-panel">
-            <div class="panel-header">
-              <div>
-                <span class="panel-eyebrow">TELEMETRÍA ESPACIAL EN VIVO</span>
-                <h2>Plano Operativo 2D — Instalaciones Campuslands</h2>
-              </div>
-              <div class="priority-legend">
-                <span class="legend-pill low"><i class="dot green"></i> Libre / Baja</span>
-                <span class="legend-pill medium"><i class="dot amber"></i> Mantenimiento / Media</span>
-                <span class="legend-pill high"><i class="dot red"></i> Bloqueo Crítico</span>
-                <span class="legend-pill error"><i class="dot purple"></i> Registro con Error</span>
-              </div>
-            </div>
-
-            <p class="panel-helper">
-              Haz clic en cualquier nave o salón para pre-seleccionarlo en el formulario de reserva o auditar su estado. Pasa el cursor (hover) para activar el escáner orbital.
-            </p>
-
-            <!-- Grid del Mapa 2D (Incluye espacios limpios + tarjetas de registro con error si el filtro lo permite) -->
-            <div id="campusFloorMap" class="campus-floor-map"></div>
-          </section>
-
-          <!-- Columna Derecha: Formulario de Asignación con Escudo IA -->
-          <section class="glass-panel booking-form-panel">
-            <div class="panel-header">
-              <div>
-                <span class="panel-eyebrow">MÓDULO 1 • ASIGNACIÓN PREVENTIVA</span>
-                <h2>Reservar Espacio de Entrenamiento</h2>
-              </div>
-              <span class="shield-chip">🛡️ Gemini Zero-Trust</span>
-            </div>
-
-            <!-- Botones de Escenarios Rápidos para Demostración ante el Jurado -->
-            <div class="demo-scenarios-bar">
-              <span class="demo-label">⚡ Pruebas en 1 clic para el Jurado:</span>
-              <div class="demo-buttons-row">
-                <button type="button" class="chip-btn chip-ok" onclick="fillDemoScenario('VALID')">
-                  ✅ Reserva Válida
-                </button>
-                <button type="button" class="chip-btn chip-warn" onclick="fillDemoScenario('OVERCAPACITY')">
-                  🚫 Exceso Aforo (50 en Apolo)
-                </button>
-                <button type="button" class="chip-btn chip-warn" onclick="fillDemoScenario('OVERDUE_USER')">
-                  ⏳ Usuario con Mora TI
-                </button>
-                <button type="button" class="chip-btn chip-danger" onclick="fillDemoScenario('PROMPT_INJECTION')">
-                  ☣️ Ataque / Riesgo IA
-                </button>
-              </div>
-            </div>
-
-            <form id="bookingForm" class="ops-form" onsubmit="submitBooking(event)">
-              <div class="form-row-2">
-                <div class="field-box">
-                  <label for="bookingSpaceId">Nave / Espacio Campuslands</label>
-                  <select id="bookingSpaceId" required></select>
-                </div>
-                <div class="field-box">
-                  <label for="bookingRole">Rol en Campus</label>
-                  <select id="bookingRole" required>
-                    <option value="TRAINER">Trainer Técnico</option>
-                    <option value="TEAM_EDUCACION">Team Educación / Staff</option>
-                    <option value="CAMPER">Camper</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-row-2">
-                <div class="field-box">
-                  <label for="bookingRequester">Nombre del Solicitante</label>
-                  <input type="text" id="bookingRequester" placeholder="Ej: Trainer Miguel Rueda" required />
-                </div>
-                <div class="field-box">
-                  <label for="bookingAttendees">Asistentes (Aforo)</label>
-                  <input type="number" id="bookingAttendees" min="1" max="200" value="28" required />
-                </div>
-              </div>
-
-              <div class="field-box">
-                <label for="bookingActivity">Actividad Académica & Justificación (Auditada por Gemini IA)</label>
-                <input
-                  type="text"
-                  id="bookingActivity"
-                  placeholder="Ej: Masterclass de Arquitectura Microservicios y Docker"
-                  required
-                />
-              </div>
-
-              <!-- Atajos de Bloques Oficiales Campuslands -->
-              <div class="time-blocks-bar">
-                <span>Bloques Oficiales:</span>
-                <button type="button" class="block-pill" onclick="setOfficialBlock('06:00','09:30')">M1 (06:00–09:30)</button>
-                <button type="button" class="block-pill" onclick="setOfficialBlock('10:00','13:30')">M2 (10:00–13:30)</button>
-                <button type="button" class="block-pill" onclick="setOfficialBlock('14:00','17:30')">T1 (14:00–17:30)</button>
-                <button type="button" class="block-pill" onclick="setOfficialBlock('18:00','21:30')">T2 (18:00–21:30)</button>
-              </div>
-
-              <div class="form-row-3">
-                <div class="field-box">
-                  <label for="bookingDate">Fecha</label>
-                  <input type="date" id="bookingDate" value="2026-10-16" required />
-                </div>
-                <div class="field-box">
-                  <label for="bookingStart">Hora Inicio</label>
-                  <input type="time" id="bookingStart" value="10:15" required />
-                </div>
-                <div class="field-box">
-                  <label for="bookingEnd">Hora Fin</label>
-                  <input type="time" id="bookingEnd" value="12:15" required />
-                </div>
-              </div>
-
-              <button type="submit" id="btnSubmitBooking" class="btn-submit-primary">
-                <span class="btn-glow"></span>
-                <span id="btnSubmitBookingText">🛡️ Auditar con Gemini IA y Confirmar Reserva</span>
-              </button>
-            </form>
-
-            <!-- Resultado Detallado de Auditoría (Reglas + Gemini IA + Sugerencias) -->
-            <div id="bookingAuditResult" class="audit-result-box" style="display: none;"></div>
-          </section>
+      <div class="kpi-box prio-high" onclick="switchView('view-security')">
+        <span class="kpi-title">BLOQUEOS / ALERTAS</span>
+        <div class="kpi-main">
+          <strong id="kpiSecurityAlerts">0</strong>
+          <small id="kpiBlockedRooms">críticas</small>
         </div>
+      </div>
 
-        <!-- Resumen Inferior en Centro de Mando: Calendario Visual Compacto + Registros con Error -->
-        <div class="overview-bottom-grid">
-          <section class="glass-panel">
-            <div class="panel-header">
-              <div>
-                <span class="panel-eyebrow">CRONOGRAMA EN TIEMPO REAL</span>
-                <h2>Reservas Activas en Campus (<span id="activeBookingsCountBadge">0</span>)</h2>
-              </div>
-              <button class="btn-xs btn-outline" onclick="switchView('view-calendar')">
-                📅 Ver Matriz Horaria Completa
-              </button>
-            </div>
-            <div id="activeBookingsList" class="bookings-cards-list"></div>
-          </section>
-
-          <section class="glass-panel error-preview-panel">
-            <div class="panel-header">
-              <div>
-                <span class="panel-eyebrow text-amber">RESILIENCIA DE DATOS (SANITY CHECK)</span>
-                <h2>Registros con Error Detectados en Dataset</h2>
-              </div>
-              <span class="badge-priority error">No rompen el sistema</span>
-            </div>
-            <p class="panel-helper">
-              El sanitizador aisló automáticamente los siguientes registros inconsistentes del archivo JSON oficial (aforo negativo, estado desconocido, horas invertidas):
-            </p>
-            <div id="overviewErrorsPreview" class="error-records-list"></div>
-          </section>
+      <div class="kpi-box prio-mint" onclick="switchView('view-database')">
+        <span class="kpi-title">OCUPACIÓN CAMPUS</span>
+        <div class="kpi-main">
+          <strong id="kpiOccupancyRate">0%</strong>
+          <small id="kpiTotalPax">0 campers</small>
         </div>
-      </main>
+      </div>
+    </section>
 
-      <!-- ============================================================== -->
-      <!-- VISTA 2: CALENDARIO VISUAL DE RESERVAS (06:00 A 22:00)        -->
-      <!-- ============================================================== -->
-      <main id="view-calendar" class="view-section">
-        <section class="glass-panel">
-          <div class="panel-header">
-            <div>
-              <span class="panel-eyebrow">BONUS • CALENDARIO VISUAL DE OPERACIONES</span>
-              <h2>Matriz Horaria de Ocupación Campuslands (06:00 – 22:00)</h2>
-            </div>
-            <div class="calendar-badges">
-              <span class="block-tag">Bloque M1: 06:00–09:30</span>
-              <span class="block-tag">Bloque M2: 10:00–13:30</span>
-              <span class="block-tag">Bloque T1: 14:00–17:30</span>
-              <span class="block-tag">Bloque T2: 18:00–21:30</span>
-            </div>
-          </div>
-          <p class="panel-helper">
-            Visualización interactiva por franja horaria. Haz clic en un bloque libre para agendar esa franja directamente o en un bloque ocupado para inspeccionar su auditoría IA.
-          </p>
-
-          <div class="visual-calendar-wrapper">
-            <div id="visualCalendarMatrix" class="visual-calendar-matrix"></div>
-          </div>
-        </section>
-      </main>
-
-      <!-- ============================================================== -->
-      <!-- VISTA 3: INVENTARIO TI & CONTROL DE PRÉSTAMOS VENCIDOS        -->
-      <!-- ============================================================== -->
-      <main id="view-resources" class="view-section">
-        <div class="module-split-grid">
-          <section class="glass-panel">
-            <div class="panel-header">
-              <div>
-                <span class="panel-eyebrow">MÓDULO 2 • HARDWARE & LABORATORIO</span>
-                <h2>Inventario de Equipos TI y Alertas de Mora</h2>
-              </div>
-              <span class="badge-priority medium">Trazabilidad Activa</span>
-            </div>
-            <div id="resourcesListContainer" class="resources-grid"></div>
-          </section>
-
-          <section class="glass-panel">
-            <div class="panel-header">
-              <div>
-                <span class="panel-eyebrow">DESPACHO DE ALMACÉN</span>
-                <h2>Registrar Préstamo de Equipo</h2>
-              </div>
-            </div>
-            <p class="panel-helper">
-              Regla R6 activa: Si el solicitante posee un equipo con préstamo vencido (mora), el sistema bloqueará nuevos préstamos automáticamente.
-            </p>
-            <form id="loanForm" class="ops-form" onsubmit="submitResourceLoan(event)">
-              <div class="field-box">
-                <label for="loanResourceId">Seleccionar Equipo Disponible</label>
-                <select id="loanResourceId" required></select>
-              </div>
-              <div class="field-box">
-                <label for="loanBorrower">Nombre del Camper o Trainer</label>
-                <input type="text" id="loanBorrower" placeholder="Ej: Camper Valentina Gómez" required />
-              </div>
-              <div class="field-box">
-                <label for="loanDueTime">Fecha y Hora Límite de Devolución</label>
-                <input type="datetime-local" id="loanDueTime" value="2026-10-16T18:00" required />
-              </div>
-              <div class="demo-buttons-row" style="margin-bottom: 12px;">
-                <button type="button" class="chip-btn chip-warn" onclick="document.getElementById('loanBorrower').value='Camper Andrés Mejía'">
-                  ⏳ Probar con Camper en Mora (Andrés Mejía)
-                </button>
-              </div>
-              <button type="submit" class="btn-submit-primary">
-                <span>💻 Autorizar Préstamo de Equipo</span>
-              </button>
-            </form>
-          </section>
-        </div>
-      </main>
-
-      <!-- ============================================================== -->
-      <!-- VISTA 4: INCIDENCIAS & TRIAJE COGNITIVO CON GEMINI IA         -->
-      <!-- ============================================================== -->
-      <main id="view-incidents" class="view-section">
-        <div class="module-split-grid">
-          <section class="glass-panel">
-            <div class="panel-header">
-              <div>
-                <span class="panel-eyebrow">MÓDULO 3 • PRIORIDAD POR COLORES</span>
-                <h2>Bitácora de Incidencias (Rojo = Crítica, Ámbar = Media, Verde = Baja)</h2>
-              </div>
-            </div>
-            <div id="incidentsListContainer" class="incidents-stack"></div>
-          </section>
-
-          <section class="glass-panel">
-            <div class="panel-header">
-              <div>
-                <span class="panel-eyebrow">CLASIFICACIÓN AUTOMÁTICA IA</span>
-                <h2>Reportar Incidencia Operativa o de Seguridad</h2>
-              </div>
-              <span class="shield-chip">🤖 Auto-Lockdown</span>
-            </div>
-            <p class="panel-helper">
-              Gemini 2.5 Flash evalúa la gravedad del reporte. Si detecta severidad <strong>CRÍTICA</strong>, bloquea automáticamente el salón en el Mapa 2D.
-            </p>
-
-            <div class="demo-buttons-row" style="margin-bottom: 12px;">
-              <button type="button" class="chip-btn chip-danger" onclick="fillIncidentDemo('CRITICAL')">
-                🔴 Demo Crítica (Humo / Cortocircuito en Sputnik)
-              </button>
-              <button type="button" class="chip-btn chip-ok" onclick="fillIncidentDemo('LOW')">
-                🟢 Demo Baja (Falta marcador borrable en Apolo)
-              </button>
-            </div>
-
-            <form id="incidentForm" class="ops-form" onsubmit="submitIncident(event)">
-              <div class="field-box">
-                <label for="incidentTargetId">Espacio Afectado</label>
-                <select id="incidentTargetId" required></select>
-              </div>
-              <div class="field-box">
-                <label for="incidentTitle">Título Breve del Incidente</label>
-                <input type="text" id="incidentTitle" placeholder="Ej: Cortocircuito en regleta principal" required />
-              </div>
-              <div class="field-box">
-                <label for="incidentDesc">Descripción Detallada de lo Ocurrido</label>
-                <textarea
-                  id="incidentDesc"
-                  rows="4"
-                  placeholder="Describe síntomas, riesgos para los campers o fallos técnicos..."
-                  required
-                ></textarea>
-              </div>
-              <button type="submit" id="btnSubmitIncident" class="btn-submit-primary btn-danger-glow">
-                <span>🚨 Clasificar con Gemini IA y Ejecutar Protocolo</span>
-              </button>
-            </form>
-          </section>
-        </div>
-      </main>
-
-      <!-- ============================================================== -->
-      <!-- VISTA 5: MANEJO DE DATOS INCONSISTENTES ("REGISTRO CON ERROR") -->
-      <!-- ============================================================== -->
-      <main id="view-errors" class="view-section">
-        <section class="glass-panel">
-          <div class="panel-header">
-            <div>
-              <span class="panel-eyebrow text-amber">REQUISITO TÉCNICO • TOLERANCIA A FALLOS</span>
-              <h2>Manejo de Datos Inconsistentes — Registros con Error</h2>
-            </div>
-            <span class="badge-priority error">Sanitizador Activo (`sanitizeCampusDataset`)</span>
-          </div>
-          <p class="panel-helper">
-            Cuando el dataset oficial incluye registros corruptos (aforo negativo, estados inventados, nombres vacíos o rangos de fecha/hora invertidos), CampusAtlas <strong>jamás se rompe</strong>: los intercepta en <code>src/rules.js</code> y los expone aquí como <strong>"Registro con error"</strong> para auditoría técnica.
-          </p>
-
-          <div id="fullErrorRecordsContainer" class="error-cards-grid"></div>
-        </section>
-      </main>
+    <!-- INDICADOR DE CARGA ("Cargando...") -->
+    <div id="globalLoader" class="loader-bar" style="display: none;" role="status">
+      <div class="spinner-ring"></div>
+      <span id="loaderText">Cargando... Verificando disponibilidad y protocolos de seguridad...</span>
     </div>
+
+    <!-- MENSAJE CLARO DE ÉXITO O ERROR -->
+    <div id="feedbackBanner" class="feedback-bar" style="display: none;" role="alert"></div>
+
+    <!-- ==================================================================== -->
+    <!-- VISTA 1: ESPACIOS & RESERVAS (MINIMALISTA Y DIRECTA)                 -->
+    <!-- ==================================================================== -->
+    <main id="view-spaces" class="view-pane active">
+      <!-- Barra compacta de filtros -->
+      <div class="filter-bar">
+        <input
+          type="search"
+          id="searchInput"
+          class="filter-input search"
+          placeholder="🔍 Buscar salón o actividad (Apolo, Artemis, Corvus...)"
+          oninput="handleFiltersChange()"
+        />
+        <select id="filterStatus" class="filter-input" onchange="handleFiltersChange()">
+          <option value="ALL">Todos los estados</option>
+          <option value="DISPONIBLE">🟢 Disponible</option>
+          <option value="OCUPADO">🔵 En uso</option>
+          <option value="BLOQUEADO_SEGURIDAD">🔴 Bloqueado Seguridad</option>
+          <option value="MANTENIMIENTO">🟠 Mantenimiento</option>
+        </select>
+        <select id="filterType" class="filter-input" onchange="handleFiltersChange()">
+          <option value="ALL">Todos los tipos</option>
+          <option value="SALA_ENTRENAMIENTO">Sala Entrenamiento</option>
+          <option value="AUDITORIO">Auditorio</option>
+          <option value="CABINA_REVIEW">Cabina Review</option>
+          <option value="SALA_REUNIONES">Sala Reuniones</option>
+          <option value="ZONA_BIENESTAR">Sala del Ser / Inglés</option>
+        </select>
+        <input
+          type="date"
+          id="filterDate"
+          class="filter-input"
+          value="2026-10-16"
+          onchange="handleFiltersChange()"
+        />
+      </div>
+
+      <div class="spaces-workspace">
+        <!-- Mapa / Grid limpio de Salones -->
+        <section class="panel spaces-panel">
+          <div class="panel-head">
+            <h2>Instalaciones Campuslands</h2>
+            <div class="legend-inline">
+              <span><i class="dot green"></i> Libre</span>
+              <span><i class="dot amber"></i> Mantenimiento</span>
+              <span><i class="dot red"></i> Bloqueado</span>
+            </div>
+          </div>
+          <div id="spacesGrid" class="spaces-grid"></div>
+        </section>
+
+        <!-- Formulario Minimalista de Reserva Segura -->
+        <section class="panel form-panel">
+          <div class="panel-head">
+            <h2>Nueva Reserva</h2>
+            <span class="tag-shield">🛡️ Verificación Activa</span>
+          </div>
+
+          <div class="quick-demos">
+            <button type="button" class="demo-chip ok" onclick="fillDemo('VALID')">✅ Válida</button>
+            <button type="button" class="demo-chip warn" onclick="fillDemo('OVERCAPACITY')">🚫 Exceso Aforo</button>
+            <button type="button" class="demo-chip danger" onclick="fillDemo('SECURITY_RISK')">🚨 Riesgo Seguridad</button>
+          </div>
+
+          <form id="bookingForm" class="clean-form" onsubmit="submitBooking(event)">
+            <div class="field">
+              <label for="bookingSpaceId">Salón / Espacio</label>
+              <select id="bookingSpaceId" required></select>
+            </div>
+
+            <div class="row-2">
+              <div class="field">
+                <label for="bookingRequester">Responsable</label>
+                <input type="text" id="bookingRequester" placeholder="Nombre" required />
+              </div>
+              <div class="field">
+                <label for="bookingRole">Rol</label>
+                <select id="bookingRole">
+                  <option value="TRAINER">Trainer</option>
+                  <option value="TEAM_EDUCACION">Staff</option>
+                  <option value="CAMPER">Camper</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row-2">
+              <div class="field">
+                <label for="bookingAttendees">Asistentes</label>
+                <input type="number" id="bookingAttendees" min="1" max="150" value="25" required />
+              </div>
+              <div class="field">
+                <label for="bookingDate">Fecha</label>
+                <input type="date" id="bookingDate" value="2026-10-16" required />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="bookingActivity">Actividad</label>
+              <input type="text" id="bookingActivity" placeholder="Ej: Sesión Backend Node.js" required />
+            </div>
+
+            <div class="blocks-row">
+              <button type="button" onclick="setBlock('06:00','09:30')">M1 06:00</button>
+              <button type="button" onclick="setBlock('10:00','13:30')">M2 10:00</button>
+              <button type="button" onclick="setBlock('14:00','17:30')">T1 14:00</button>
+              <button type="button" onclick="setBlock('18:00','21:30')">T2 18:00</button>
+            </div>
+
+            <div class="row-2">
+              <div class="field">
+                <label for="bookingStart">Inicio</label>
+                <input type="time" id="bookingStart" value="10:00" required />
+              </div>
+              <div class="field">
+                <label for="bookingEnd">Fin</label>
+                <input type="time" id="bookingEnd" value="12:00" required />
+              </div>
+            </div>
+
+            <button type="submit" id="btnSubmitBooking" class="btn-primary">
+              Confirmar Reserva Segura
+            </button>
+          </form>
+
+          <div id="auditBox" class="audit-box" style="display: none;"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ==================================================================== -->
+    <!-- VISTA 2: CALENDARIO VISUAL DE RESERVAS                               -->
+    <!-- ==================================================================== -->
+    <main id="view-calendar" class="view-pane">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Calendario Visual de Ocupación (06:00 – 22:00)</h2>
+          <span class="subtle-text">Haz clic en un bloque libre para reservarlo</span>
+        </div>
+        <div class="calendar-scroll">
+          <div id="calendarMatrix" class="calendar-matrix"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ==================================================================== -->
+    <!-- VISTA 3: BASE DE DATOS EN VIVO & ANALÍTICA DE RESERVAS               -->
+    <!-- ==================================================================== -->
+    <main id="view-database" class="view-pane">
+      <!-- Tarjetas de Analítica Visual -->
+      <div class="analytics-grid">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Ocupación y Demanda por Salón</h2>
+            <span class="tag-mono">Tiempo Real</span>
+          </div>
+          <div id="spaceAnalyticsBars" class="analytics-bars"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Balance de Seguridad &amp; Auditoría</h2>
+            <span class="tag-mono">Zero-Trust</span>
+          </div>
+          <div id="securityStatsSummary" class="security-stats-grid"></div>
+        </section>
+      </div>
+
+      <!-- Tabla de Base de Datos Sincronizada -->
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Base de Datos de Reservas &amp; Auditoría</h2>
+          </div>
+          <div class="db-controls">
+            <input
+              type="search"
+              id="dbSearchInput"
+              class="filter-input"
+              placeholder="🔍 Filtrar registro en BD..."
+              oninput="renderDatabaseView()"
+            />
+            <select id="dbStatusFilter" class="filter-input" onchange="renderDatabaseView()">
+              <option value="ALL">Todos los registros</option>
+              <option value="ACTIVA">🟢 Activas</option>
+              <option value="BLOQUEADA_SEGURIDAD">🔴 Bloqueadas por Seguridad</option>
+              <option value="CANCELADA">⚪ Canceladas</option>
+            </select>
+            <button class="btn-icon-text" onclick="exportReportCSV()">📥 Exportar BD (CSV)</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="db-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>SALÓN</th>
+                <th>RESPONSABLE</th>
+                <th>ACTIVIDAD</th>
+                <th>HORARIO</th>
+                <th>AFORO</th>
+                <th>RIESGO</th>
+                <th>ESTADO</th>
+                <th>DICTAMEN SEGURIDAD</th>
+                <th>ACCIÓN</th>
+              </tr>
+            </thead>
+            <tbody id="dbTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- ==================================================================== -->
+    <!-- VISTA 4: CENTRO DE SEGURIDAD DE ESPACIOS                             -->
+    <!-- ==================================================================== -->
+    <main id="view-security" class="view-pane">
+      <div class="security-workspace">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Alertas de Seguridad en Salones</h2>
+            <div class="legend-inline">
+              <span><i class="dot red"></i> Crítica</span>
+              <span><i class="dot amber"></i> Media</span>
+              <span><i class="dot green"></i> Baja</span>
+            </div>
+          </div>
+          <div id="incidentsList" class="incidents-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <h2>Reportar Alerta en Salón</h2>
+            <span class="tag-shield">Bloqueo Preventivo</span>
+          </div>
+
+          <div class="quick-demos">
+            <button type="button" class="demo-chip danger" onclick="fillIncidentDemo('CRITICAL')">
+              🔴 Alerta Eléctrica Crítica
+            </button>
+            <button type="button" class="demo-chip ok" onclick="fillIncidentDemo('LOW')">
+              🟢 Mantenimiento Menor
+            </button>
+          </div>
+
+          <form id="incidentForm" class="clean-form" onsubmit="submitIncident(event)">
+            <div class="field">
+              <label for="incidentTargetId">Salón Afectado</label>
+              <select id="incidentTargetId" required></select>
+            </div>
+            <div class="field">
+              <label for="incidentTitle">Motivo de la Alerta</label>
+              <input type="text" id="incidentTitle" placeholder="Ej: Cortocircuito en toma eléctrica" required />
+            </div>
+            <div class="field">
+              <label for="incidentDesc">Detalle</label>
+              <textarea id="incidentDesc" rows="3" placeholder="Descripción breve del riesgo..." required></textarea>
+            </div>
+            <button type="submit" id="btnSubmitIncident" class="btn-primary danger">
+              Activar Protocolo de Seguridad
+            </button>
+          </form>
+        </section>
+      </div>
+    </main>
   </div>
 
-  <!-- ============================================================== -->
-  <!-- DRAWER FLOTANTE: CHAT DE ASISTENCIA CON IA (COPILOTO CAMPUS)  -->
-  <!-- ============================================================== -->
-  <aside id="copilotDrawer" class="copilot-drawer" aria-label="Chat de Asistencia con IA">
-    <div class="copilot-header">
-      <div class="copilot-title-row">
-        <img src="/assets/casco_azul.svg" alt="Copiloto" class="copilot-avatar" />
+  <!-- ASISTENTE CONVERSACIONAL FLOTANTE (MINIMALISTA) -->
+  <aside id="chatDrawer" class="chat-drawer" aria-label="Asistente Operativo">
+    <div class="chat-head">
+      <div class="chat-head-title">
+        <img src="/assets/casco_azul.svg" alt="" class="chat-helmet" />
         <div>
-          <h3>Copiloto IA Campuslands</h3>
-          <span class="copilot-status">En línea • Gemini 2.5 Flash</span>
+          <strong>Asistente Campuslands</strong>
+          <span>Consulta disponibilidad y estado</span>
         </div>
       </div>
-      <button class="btn-close-copilot" onclick="toggleCopilotDrawer()" aria-label="Cerrar chat">✕</button>
+      <button class="btn-close" onclick="toggleChat()">✕</button>
     </div>
 
-    <div class="copilot-quick-prompts">
-      <button type="button" onclick="sendQuickPrompt('¿Qué aulas están libres a las 3 de la tarde?')">
-        ¿Qué aulas están libres a las 3?
+    <div class="chat-chips">
+      <button type="button" onclick="askQuick('¿Qué aulas están libres a las 3 de la tarde?')">
+        ¿Aulas libres a las 3?
       </button>
-      <button type="button" onclick="sendQuickPrompt('¿Qué equipos tienen préstamo vencido ahora mismo?')">
-        ¿Equipos con préstamo vencido?
-      </button>
-      <button type="button" onclick="sendQuickPrompt('¿Por qué está bloqueado el Auditorio Corvus y qué incidencias hay?')">
-        ¿Por qué está bloqueado Corvus?
+      <button type="button" onclick="askQuick('¿Qué salones están bloqueados por seguridad?')">
+        ¿Salones bloqueados?
       </button>
     </div>
 
-    <div id="copilotMessages" class="copilot-messages">
-      <div class="chat-bubble assistant">
-        <div class="bubble-meta">🛰️ Copiloto Gemini • Telemetría en vivo</div>
-        <p>
-          ¡Hola, Camper! Soy el asistente operativo de <strong>Campuslands</strong>. Conozco en tiempo real los aforos de Apolo, Artemis, Sputnik, Corvus, las reservas del día y las alertas de mora.
-          <br /><br />
-          Pregúntame por ejemplo: <em>"¿Qué aulas están libres a las 3?"</em>
-        </p>
+    <div id="chatMessages" class="chat-messages">
+      <div class="bubble bot">
+        Hola. Pregúntame qué salones están disponibles en cualquier horario o el estado de seguridad del campus.
       </div>
     </div>
 
-    <form class="copilot-input-bar" onsubmit="submitCopilotQuestion(event)">
-      <input
-        type="text"
-        id="copilotInput"
-        placeholder="Escribe tu consulta... (ej: ¿Qué aulas están libres a las 3?)"
-        autocomplete="off"
-      />
-      <button type="submit" id="btnSendCopilot">Enviar 🚀</button>
+    <form class="chat-form" onsubmit="submitChat(event)">
+      <input type="text" id="chatInput" placeholder="¿Qué aulas están libres a las 3?" autocomplete="off" />
+      <button type="submit" id="btnSendChat">Enviar</button>
     </form>
   </aside>
 
-  <!-- Botón Flotante FAB para abrir el Chat en cualquier momento -->
-  <button id="copilotFab" class="copilot-fab" onclick="toggleCopilotDrawer()" title="Consultar al Copiloto IA">
-    <img src="/assets/casco_azul.svg" alt="" class="fab-helmet" />
-    <span class="fab-text">Consultar IA</span>
+  <button class="chat-fab" onclick="toggleChat()" title="Asistente de Espacios">
+    <img src="/assets/casco_azul.svg" alt="" />
+    <span>Asistente</span>
   </button>
 
   <script src="/app.js"></script>

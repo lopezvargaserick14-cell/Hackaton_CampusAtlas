@@ -21,8 +21,7 @@ loadEnvFile();
 const {
   RULES_CONFIG,
   sanitizeCampusDataset,
-  validateSpaceBookingRequest,
-  validateResourceLoanRequest
+  validateSpaceBookingRequest
 } = require("./src/rules");
 const {
   evaluateBookingSecurityWithGemini,
@@ -49,8 +48,8 @@ function getSanitizedState() {
   ensureRuntimeDataFile();
   const rawContent = fs.readFileSync(RUNTIME_DATA_PATH, "utf8");
   const rawJson = JSON.parse(rawContent);
-  const { cleanData, quarantinedRecords } = sanitizeCampusDataset(rawJson);
-  return { rawJson, cleanData, quarantinedRecords };
+  const { cleanData } = sanitizeCampusDataset(rawJson);
+  return { rawJson, cleanData };
 }
 
 function saveRawDataset(updatedRawJson) {
@@ -103,7 +102,7 @@ const server = http.createServer(async (req, res) => {
 
     // GET /api/state
     if (req.method === "GET" && pathname === "/api/state") {
-      const { cleanData, quarantinedRecords } = getSanitizedState();
+      const { cleanData } = getSanitizedState();
       const apiKey = (process.env.GEMINI_API_KEY || "").trim();
       const hasApiKey = Boolean(apiKey && apiKey !== "TU_API_KEY_DE_GEMINI_AQUI");
 
@@ -111,16 +110,14 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         aiStatus: {
           configured: hasApiKey,
-          model: process.env.GEMINI_MODEL || "gemini-2.5-flash",
           securityMode: "ZERO_TRUST_ACTIVE"
         },
         rulesConfig: RULES_CONFIG,
-        quarantinedRecords,
         state: cleanData
       });
     }
 
-    // POST /api/bookings (Módulo 1: Espacios)
+    // POST /api/bookings (Reserva + Registro automático en Base de Datos)
     if (req.method === "POST" && pathname === "/api/bookings") {
       const payload = await parseBody(req);
       const { rawJson, cleanData } = getSanitizedState();
@@ -132,6 +129,53 @@ const server = http.createServer(async (req, res) => {
         cleanData
       );
 
+      const spaceObj = validationResult.space || {
+        id: payload.spaceId || "SP-UNK",
+        name: payload.spaceId || "Espacio"
+      };
+
+      // Si es bloqueado por seguridad IA, guardamos el intento bloqueado en la BD para analítica
+      if (aiSecurityAudit.verdict === "BLOQUEADO_POR_IA") {
+        const blockedRecord = {
+          id: `RES-${Math.floor(100 + Math.random() * 900)}`,
+          spaceId: spaceObj.id,
+          spaceName: spaceObj.name,
+          requesterName: String(payload.requesterName || "Solicitante").trim(),
+          requesterRole: payload.requesterRole || "CAMPER",
+          activityTitle: String(payload.activityTitle || "").trim(),
+          attendees: Math.max(1, Number(payload.attendees) || 1),
+          date: payload.date || "2026-10-16",
+          startTime: payload.startTime || "08:00",
+          endTime: payload.endTime || "10:00",
+          status: "BLOQUEADA_SEGURIDAD",
+          riskLevel: aiSecurityAudit.riskLevel || "CRITICO",
+          securityNote: aiSecurityAudit.summary,
+          createdAt: new Date().toISOString()
+        };
+        rawJson.bookings = rawJson.bookings || [];
+        rawJson.bookings.unshift(blockedRecord);
+        saveRawDataset(rawJson);
+
+        return sendJson(res, 403, {
+          ok: false,
+          blockedBy: "SECURITY_SHIELD",
+          message: `Bloqueo de Seguridad: ${aiSecurityAudit.summary}`,
+          errors: [aiSecurityAudit.summary, ...(aiSecurityAudit.securityFlags || [])],
+          ruleChecks: [
+            ...validationResult.ruleChecks,
+            {
+              ruleId: "SEC-01",
+              ruleName: "Auditoría de Seguridad Operativa",
+              passed: false,
+              detail: aiSecurityAudit.summary
+            }
+          ],
+          alternativeSpaces: validationResult.alternativeSpaces,
+          aiSecurityAudit
+        });
+      }
+
+      // Si falla por reglas de negocio (aforo, cruce, horario)
       if (!validationResult.valid) {
         return sendJson(res, 422, {
           ok: false,
@@ -144,33 +188,10 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      if (aiSecurityAudit.verdict === "BLOQUEADO_POR_IA") {
-        return sendJson(res, 403, {
-          ok: false,
-          blockedBy: "GEMINI_SECURITY_SHIELD",
-          message: `Bloqueado por Gemini IA: ${aiSecurityAudit.summary}`,
-          errors: [
-            `Bloqueo Preventivo IA (Riesgo ${aiSecurityAudit.riskLevel}): ${aiSecurityAudit.summary}`,
-            ...(aiSecurityAudit.securityFlags || [])
-          ],
-          ruleChecks: [
-            ...validationResult.ruleChecks,
-            {
-              ruleId: "IA-SEC",
-              ruleName: "Auditoría de Seguridad Cognitiva (Gemini)",
-              passed: false,
-              detail: aiSecurityAudit.summary
-            }
-          ],
-          alternativeSpaces: validationResult.alternativeSpaces,
-          aiSecurityAudit
-        });
-      }
-
       const newBooking = {
         id: `RES-${Math.floor(100 + Math.random() * 900)}`,
-        spaceId: validationResult.space.id,
-        spaceName: validationResult.space.name,
+        spaceId: spaceObj.id,
+        spaceName: spaceObj.name,
         requesterName: String(payload.requesterName).trim(),
         requesterRole: payload.requesterRole || "CAMPER",
         activityTitle: String(payload.activityTitle).trim(),
@@ -179,7 +200,8 @@ const server = http.createServer(async (req, res) => {
         startTime: payload.startTime,
         endTime: payload.endTime,
         status: "ACTIVA",
-        aiSecurityAudit,
+        riskLevel: aiSecurityAudit.riskLevel || "BAJO",
+        securityNote: aiSecurityAudit.summary,
         createdAt: new Date().toISOString()
       };
 
@@ -189,13 +211,13 @@ const server = http.createServer(async (req, res) => {
 
       return sendJson(res, 201, {
         ok: true,
-        message: `Asignación confirmada en '${validationResult.space.name}' (${newBooking.startTime}–${newBooking.endTime}).`,
+        message: `Reserva confirmada en ${spaceObj.name} (${newBooking.startTime}–${newBooking.endTime}).`,
         booking: newBooking,
         ruleChecks: [
           ...validationResult.ruleChecks,
           {
-            ruleId: "IA-SEC",
-            ruleName: "Auditoría de Seguridad Cognitiva (Gemini)",
+            ruleId: "SEC-01",
+            ruleName: "Auditoría de Seguridad Operativa",
             passed: true,
             detail: aiSecurityAudit.summary
           }
@@ -209,10 +231,19 @@ const server = http.createServer(async (req, res) => {
       const { bookingId } = await parseBody(req);
       const { rawJson } = getSanitizedState();
       const target = (rawJson.bookings || []).find((b) => b.id === bookingId);
-      if (!target) return sendJson(res, 404, { ok: false, message: "Reserva no encontrada." });
+      if (!target) return sendJson(res, 404, { ok: false, message: "Registro no encontrado." });
       target.status = "CANCELADA";
       saveRawDataset(rawJson);
-      return sendJson(res, 200, { ok: true, message: `Bloque ${bookingId} liberado.` });
+      return sendJson(res, 200, { ok: true, message: `Reserva ${bookingId} liberada en base de datos.` });
+    }
+
+    // POST /api/bookings/delete
+    if (req.method === "POST" && pathname === "/api/bookings/delete") {
+      const { bookingId } = await parseBody(req);
+      const { rawJson } = getSanitizedState();
+      rawJson.bookings = (rawJson.bookings || []).filter((b) => b.id !== bookingId);
+      saveRawDataset(rawJson);
+      return sendJson(res, 200, { ok: true, message: `Registro ${bookingId} eliminado de la base de datos.` });
     }
 
     // POST /api/spaces/status
@@ -223,55 +254,17 @@ const server = http.createServer(async (req, res) => {
       if (!space) return sendJson(res, 404, { ok: false, message: "Espacio no encontrado." });
       space.status = newStatus;
       space.lockReason =
-        newStatus === "DISPONIBLE"
-          ? null
-          : lockReason || `Lockdown manual activado desde Consola`;
+        newStatus === "DISPONIBLE" ? null : lockReason || "Bloqueo preventivo de seguridad";
       saveRawDataset(rawJson);
       return sendJson(res, 200, { ok: true, space });
     }
 
-    // POST /api/resources/loan (Módulo 2: Préstamo de Equipos TI)
-    if (req.method === "POST" && pathname === "/api/resources/loan") {
-      const payload = await parseBody(req);
-      const { rawJson, cleanData } = getSanitizedState();
-      const validation = validateResourceLoanRequest(payload, cleanData);
-      if (!validation.valid) {
-        return sendJson(res, 422, {
-          ok: false,
-          message: validation.errors[0],
-          errors: validation.errors
-        });
-      }
-      const resItem = (rawJson.resources || []).find((r) => r.id === payload.resourceId);
-      resItem.status = "PRESTADO";
-      resItem.borrowedBy = String(payload.borrowerName).trim();
-      resItem.dueTime = payload.dueTime || "2026-10-16T22:00:00-05:00";
-      saveRawDataset(rawJson);
-      return sendJson(res, 200, {
-        ok: true,
-        message: `Equipo '${resItem.name}' prestado a ${resItem.borrowedBy}.`
-      });
-    }
-
-    // POST /api/resources/return
-    if (req.method === "POST" && pathname === "/api/resources/return") {
-      const { resourceId } = await parseBody(req);
-      const { rawJson } = getSanitizedState();
-      const resItem = (rawJson.resources || []).find((r) => r.id === resourceId);
-      if (!resItem) return sendJson(res, 404, { ok: false, message: "Equipo no encontrado." });
-      resItem.status = "DISPONIBLE";
-      resItem.borrowedBy = null;
-      resItem.dueTime = null;
-      saveRawDataset(rawJson);
-      return sendJson(res, 200, { ok: true, message: `Equipo '${resItem.name}' devuelto al almacén.` });
-    }
-
-    // POST /api/incidents (Módulo 3: Triaje IA + Auto-Lockdown en Mapa 2D)
+    // POST /api/incidents (Seguridad de Instalaciones + Auto-Lockdown)
     if (req.method === "POST" && pathname === "/api/incidents") {
       const payload = await parseBody(req);
       const { rawJson, cleanData } = getSanitizedState();
       if (!payload.title || !payload.description || !payload.targetId) {
-        return sendJson(res, 400, { ok: false, message: "Completa título, descripción y salón afectado." });
+        return sendJson(res, 400, { ok: false, message: "Completa salón, título y detalle." });
       }
 
       const triage = await triageIncidentWithGemini(payload, cleanData);
@@ -279,7 +272,6 @@ const server = http.createServer(async (req, res) => {
         id: `INC-${Math.floor(100 + Math.random() * 900)}`,
         title: String(payload.title).trim(),
         description: String(payload.description).trim(),
-        targetType: "ESPACIO",
         targetId: payload.targetId,
         severity: triage.severity,
         category: triage.category,
@@ -291,7 +283,6 @@ const server = http.createServer(async (req, res) => {
       rawJson.incidents = rawJson.incidents || [];
       rawJson.incidents.unshift(newInc);
 
-      // Si Gemini determina bloqueo preventivo o severidad CRÍTICA, bloquea el salón en el Plano 2D
       if (triage.autoLockTarget || triage.severity === "CRITICA") {
         const affectedSpace = (rawJson.spaces || []).find((s) => s.id === payload.targetId);
         if (affectedSpace) {
@@ -303,7 +294,7 @@ const server = http.createServer(async (req, res) => {
       saveRawDataset(rawJson);
       return sendJson(res, 201, {
         ok: true,
-        message: `Incidencia clasificada por Gemini IA como ${newInc.severity} (${newInc.category}).`,
+        message: `Alerta registrada con prioridad ${newInc.severity}.`,
         incident: newInc
       });
     }
@@ -313,7 +304,7 @@ const server = http.createServer(async (req, res) => {
       const { incidentId } = await parseBody(req);
       const { rawJson } = getSanitizedState();
       const inc = (rawJson.incidents || []).find((i) => i.id === incidentId);
-      if (!inc) return sendJson(res, 404, { ok: false, message: "Incidencia no encontrada." });
+      if (!inc) return sendJson(res, 404, { ok: false, message: "Alerta no encontrada." });
       inc.status = "RESUELTA";
 
       const affectedSpace = (rawJson.spaces || []).find((s) => s.id === inc.targetId);
@@ -322,97 +313,66 @@ const server = http.createServer(async (req, res) => {
         affectedSpace.lockReason = null;
       }
       saveRawDataset(rawJson);
-      return sendJson(res, 200, { ok: true, message: "Incidencia resuelta y salón rehabilitado." });
+      return sendJson(res, 200, { ok: true, message: "Alerta resuelta y salón rehabilitado." });
     }
 
-    // POST /api/chat (Copiloto Conversacional Gemini IA)
+    // POST /api/chat (Asistente de Espacios y Seguridad)
     if (req.method === "POST" && pathname === "/api/chat") {
       const { question } = await parseBody(req);
       if (!question || !String(question).trim()) {
-        return sendJson(res, 400, { ok: false, message: "Escribe una consulta para el Copiloto IA." });
+        return sendJson(res, 400, { ok: false, message: "Escribe una consulta." });
       }
       const { cleanData } = getSanitizedState();
       const chatRes = await askCampusCopilotWithGemini(String(question).trim(), cleanData);
       return sendJson(res, 200, {
         ok: true,
         reply: chatRes.answer || chatRes.reply,
-        highlightedSpaceId: chatRes.highlightedSpaceId || null,
-        provider: "GEMINI_2.5_FLASH_LIVE"
+        highlightedSpaceId: chatRes.highlightedSpaceId || null
       });
     }
 
-    // GET /api/export/csv (Exportar reporte completo a CSV)
+    // GET /api/export/csv (Exportar Base de Datos de Reservas y Espacios a CSV)
     if (req.method === "GET" && pathname === "/api/export/csv") {
-      const { cleanData, quarantinedRecords } = getSanitizedState();
+      const { cleanData } = getSanitizedState();
       const escapeCsv = (val) => `"${String(val == null ? "" : val).replace(/"/g, '""')}"`;
       const rows = [
-        ["SECCION", "ID", "NOMBRE_O_TITULO", "ESTADO_O_SEVERIDAD", "RESPONSABLE_O_AFORO", "DETALLE_OPERATIVO", "TIMESTAMP"].map(escapeCsv).join(",")
+        ["TABLA", "ID", "SALON", "SOLICITANTE_O_ZONA", "ACTIVIDAD_O_TIPO", "FECHA_HORARIO", "AFORO", "ESTADO", "RIESGO_SEGURIDAD", "DICTAMEN_SEGURIDAD"].map(escapeCsv).join(",")
       ];
-
-      (cleanData.spaces || []).forEach((s) => {
-        rows.push([
-          "ESPACIO_CAMPUS",
-          s.id,
-          s.name,
-          s.status,
-          `Aforo Max: ${s.capacity}`,
-          `${s.zone} | ${s.type}${s.lockReason ? " | Lock: " + s.lockReason : ""}`,
-          new Date().toISOString()
-        ].map(escapeCsv).join(","));
-      });
 
       (cleanData.bookings || []).forEach((b) => {
         rows.push([
-          "RESERVA_HORARIA",
+          "RESERVAS_DB",
           b.id,
+          b.spaceName,
+          `${b.requesterName} (${b.requesterRole || "CAMPER"})`,
           b.activityTitle,
+          `${b.date} ${b.startTime}-${b.endTime}`,
+          b.attendees,
           b.status,
-          `${b.requesterName} (${b.attendees} pax)`,
-          `${b.spaceName} | ${b.date} ${b.startTime}-${b.endTime}`,
-          b.createdAt || new Date().toISOString()
+          b.riskLevel || "BAJO",
+          b.securityNote || "Verificado"
         ].map(escapeCsv).join(","));
       });
 
-      (cleanData.resources || []).forEach((r) => {
+      (cleanData.spaces || []).forEach((s) => {
         rows.push([
-          "EQUIPO_TI",
-          r.id,
-          r.name,
-          r.status,
-          r.borrowedBy || "Almacen Central",
-          `Cat: ${r.category}${r.dueTime ? " | Vence: " + r.dueTime : ""}`,
-          new Date().toISOString()
-        ].map(escapeCsv).join(","));
-      });
-
-      (cleanData.incidents || []).forEach((i) => {
-        rows.push([
-          "INCIDENCIA_CAMPUS",
-          i.id,
-          i.title,
-          `${i.severity} (${i.status})`,
-          i.targetId,
-          `${i.category} | ${i.aiRecommendation || i.description}`,
-          i.createdAt || new Date().toISOString()
-        ].map(escapeCsv).join(","));
-      });
-
-      (quarantinedRecords || []).forEach((q) => {
-        rows.push([
-          "REGISTRO_CON_ERROR",
-          q.id,
-          q.entityType,
-          "DATO_INCONSISTENTE",
-          "Sanitizador Automatico",
-          q.reason,
-          new Date().toISOString()
+          "ESPACIOS_DB",
+          s.id,
+          s.name,
+          s.zone,
+          s.type,
+          "06:00-22:00",
+          s.capacity,
+          s.status,
+          s.status === "BLOQUEADO_SEGURIDAD" ? "CRITICO" : "BAJO",
+          s.lockReason || "Habilitado"
         ].map(escapeCsv).join(","));
       });
 
       const csvContent = "\uFEFF" + rows.join("\r\n");
       res.writeHead(200, {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="CampusAtlas_Reporte_Operativo_${new Date().toISOString().slice(0, 10)}.csv"`,
+        "Content-Disposition": `attachment; filename="CampusAtlas_BaseDatos_${new Date().toISOString().slice(0, 10)}.csv"`,
         "Cache-Control": "no-store"
       });
       return res.end(csvContent);
@@ -424,7 +384,7 @@ const server = http.createServer(async (req, res) => {
       fs.writeFileSync(RUNTIME_DATA_PATH, seedContent, "utf8");
       return sendJson(res, 200, {
         ok: true,
-        message: "Dataset oficial restaurado a su estado inicial."
+        message: "Base de datos restaurada a su estado inicial."
       });
     }
 
@@ -452,7 +412,7 @@ const server = http.createServer(async (req, res) => {
 
 if (!IS_VERCEL) {
   server.listen(PORT, () => {
-    console.log(`\n🛡️  CampusShield AI corriendo en: http://localhost:${PORT}`);
+    console.log(`\n🛡️  CampusAtlas corriendo en: http://localhost:${PORT}`);
   });
 }
 
