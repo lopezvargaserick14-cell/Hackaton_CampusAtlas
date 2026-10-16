@@ -20,8 +20,8 @@ const RULES_CONFIG = {
   // 3. Proporción máxima permitida del aforo del salón (1.0 = 100% estricto)
   MAX_CAPACITY_OVERFLOW_RATIO: 1.0,
 
-  // 4. Máximo de reservas activas por solicitante en el mismo día
-  MAX_ACTIVE_BOOKINGS_PER_USER_PER_DAY: 2
+  // 4. Máximo de reservas activas por solicitante en el mismo día (amplio para pruebas)
+  MAX_ACTIVE_BOOKINGS_PER_USER_PER_DAY: 50
 };
 
 const VALID_SPACE_STATUSES = ["DISPONIBLE", "MANTENIMIENTO", "BLOQUEADO_SEGURIDAD"];

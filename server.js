@@ -415,12 +415,13 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      // 2. Fallback en caso de ejecución serverless sin binario Python
-      const fallbackRes = await askCampusCopilotWithGemini(cleanQuestion, cleanData);
+      // 2. Fallback inteligente en caso de ejecución serverless sin binario Python (Vercel)
+      const targetDate = sanitizeInputString(date || "2026-10-16", 20);
+      const fallbackRes = await askCampusCopilotWithGemini(cleanQuestion, cleanData, targetDate);
       return sendJson(res, 200, {
         ok: true,
         reply: fallbackRes.answer || fallbackRes.reply,
-        engine: "FALLBACK_CORE"
+        engine: fallbackRes.engine || "NODE_SMART_CORE"
       });
     }
 
