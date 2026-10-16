@@ -12,10 +12,7 @@
 </head>
 <body>
   <!-- Fondo Espacial Minimalista Campuslands -->
-  <div class="cosmic-bg" aria-hidden="true">
-    <div class="glow-orb orb-1"></div>
-    <div class="glow-orb orb-2"></div>
-  </div>
+  <div class="cosmic-bg" aria-hidden="true"></div>
 
   <!-- Contenedor de Toasts -->
   <div id="toastContainer" class="toast-container" aria-live="polite"></div>
@@ -45,13 +42,13 @@
           <span class="pill-count" id="dbCountBadge">0</span>
         </button>
         <button class="nav-pill" data-view="view-security" onclick="switchView('view-security')">
-          🛡️ Seguridad
+          🛡️ Seguridad de Instalaciones
           <span class="pill-count danger" id="secCountBadge">0</span>
         </button>
       </nav>
 
       <div class="nav-actions">
-        <div class="security-indicator" title="Motor de Seguridad Activo">
+        <div class="security-indicator" title="Monitoreo de Seguridad Activo">
           <span class="status-dot"></span>
           <span>Escudo Activo</span>
         </div>
@@ -67,24 +64,24 @@
 
     <!-- CONTADORES MINIMALISTAS (4 KPIs) -->
     <section class="kpi-strip" aria-label="Indicadores de Espacios y Seguridad">
-      <div class="kpi-box prio-low" onclick="quickFilterStatus('DISPONIBLE')">
-        <span class="kpi-title">SALONES LIBRES</span>
+      <div class="kpi-box prio-low" onclick="setFilterMode('VALIDA')">
+        <span class="kpi-title">SALONES DISPONIBLES</span>
         <div class="kpi-main">
           <strong id="kpiFreeSpaces">0</strong>
           <small id="kpiTotalSpaces">/ 7</small>
         </div>
       </div>
 
-      <div class="kpi-box prio-info" onclick="switchView('view-database')">
-        <span class="kpi-title">RESERVAS ACTIVAS</span>
+      <div class="kpi-box prio-info" onclick="setFilterMode('OCUPADO')">
+        <span class="kpi-title">OCUPADOS / EN USO</span>
         <div class="kpi-main">
           <strong id="kpiActiveBookings">0</strong>
-          <small>en curso</small>
+          <small>con reserva activa</small>
         </div>
       </div>
 
       <div class="kpi-box prio-high" onclick="switchView('view-security')">
-        <span class="kpi-title">BLOQUEOS / ALERTAS</span>
+        <span class="kpi-title">ALERTAS EN INSTALACIÓN</span>
         <div class="kpi-main">
           <strong id="kpiSecurityAlerts">0</strong>
           <small id="kpiBlockedRooms">críticas</small>
@@ -95,7 +92,7 @@
         <span class="kpi-title">OCUPACIÓN CAMPUS</span>
         <div class="kpi-main">
           <strong id="kpiOccupancyRate">0%</strong>
-          <small id="kpiTotalPax">0 campers</small>
+          <small id="kpiTotalPax">0 personas</small>
         </div>
       </div>
     </section>
@@ -103,14 +100,14 @@
     <!-- INDICADOR DE CARGA ("Cargando...") -->
     <div id="globalLoader" class="loader-bar" style="display: none;" role="status">
       <div class="spinner-ring"></div>
-      <span id="loaderText">Cargando... Verificando disponibilidad y protocolos de seguridad...</span>
+      <span id="loaderText">Cargando... Verificando disponibilidad y condiciones de seguridad...</span>
     </div>
 
     <!-- MENSAJE CLARO DE ÉXITO O ERROR -->
     <div id="feedbackBanner" class="feedback-bar" style="display: none;" role="alert"></div>
 
     <!-- ==================================================================== -->
-    <!-- VISTA 1: ESPACIOS & RESERVAS (MINIMALISTA Y DIRECTA)                 -->
+    <!-- VISTA 1: ESPACIOS & RESERVAS                                         -->
     <!-- ==================================================================== -->
     <main id="view-spaces" class="view-pane active">
       <!-- Barra compacta de filtros -->
@@ -119,15 +116,13 @@
           type="search"
           id="searchInput"
           class="filter-input search"
-          placeholder="🔍 Buscar salón o actividad (Apolo, Artemis, Corvus...)"
+          placeholder="🔍 Buscar salón o actividad (Apolo, Artemis, Sputnik, Corvus...)"
           oninput="handleFiltersChange()"
         />
         <select id="filterStatus" class="filter-input" onchange="handleFiltersChange()">
-          <option value="ALL">Todos los estados</option>
-          <option value="DISPONIBLE">🟢 Disponible</option>
-          <option value="OCUPADO">🔵 En uso</option>
-          <option value="BLOQUEADO_SEGURIDAD">🔴 Bloqueado Seguridad</option>
-          <option value="MANTENIMIENTO">🟠 Mantenimiento</option>
+          <option value="ALL">Todos los salones</option>
+          <option value="VALIDA">✅ Válida (Espacios Disponibles)</option>
+          <option value="OCUPADO">🔵 Ocupado / En uso</option>
         </select>
         <select id="filterType" class="filter-input" onchange="handleFiltersChange()">
           <option value="ALL">Todos los tipos</option>
@@ -150,64 +145,90 @@
         <!-- Mapa / Grid limpio de Salones -->
         <section class="panel spaces-panel">
           <div class="panel-head">
-            <h2>Instalaciones Campuslands</h2>
-            <div class="legend-inline">
-              <span><i class="dot green"></i> Libre</span>
-              <span><i class="dot amber"></i> Mantenimiento</span>
-              <span><i class="dot red"></i> Bloqueado</span>
+            <h2>Salones e Instalaciones</h2>
+            <!-- Dos opciones rápidas solicitadas: Válida (Disponibles) y Ocupado / En uso -->
+            <div class="mode-switch-group">
+              <button type="button" id="btnModeAll" class="mode-chip active" onclick="setFilterMode('ALL')">
+                Todos
+              </button>
+              <button type="button" id="btnModeValida" class="mode-chip ok" onclick="setFilterMode('VALIDA')">
+                ✅ Válida (Disponibles)
+              </button>
+              <button type="button" id="btnModeOcupado" class="mode-chip info" onclick="setFilterMode('OCUPADO')">
+                🔵 Ocupado / En uso
+              </button>
             </div>
           </div>
           <div id="spacesGrid" class="spaces-grid"></div>
         </section>
 
-        <!-- Formulario Minimalista de Reserva Segura -->
+        <!-- Formulario de Reserva Adaptativo por Salón -->
         <section class="panel form-panel">
           <div class="panel-head">
-            <h2>Nueva Reserva</h2>
-            <span class="tag-shield">🛡️ Verificación Activa</span>
-          </div>
-
-          <div class="quick-demos">
-            <button type="button" class="demo-chip ok" onclick="fillDemo('VALID')">✅ Válida</button>
-            <button type="button" class="demo-chip warn" onclick="fillDemo('OVERCAPACITY')">🚫 Exceso Aforo</button>
-            <button type="button" class="demo-chip danger" onclick="fillDemo('SECURITY_RISK')">🚨 Riesgo Seguridad</button>
+            <h2>Reservar Espacio</h2>
+            <span class="tag-shield" id="selectedSpaceCapTag">Capacidad: 35 personas</span>
           </div>
 
           <form id="bookingForm" class="clean-form" onsubmit="submitBooking(event)">
             <div class="field">
-              <label for="bookingSpaceId">Salón / Espacio</label>
-              <select id="bookingSpaceId" required></select>
+              <label for="bookingSpaceId">Seleccionar Salón / Espacio</label>
+              <select id="bookingSpaceId" onchange="onSpaceOrAttendeesChange()" required></select>
             </div>
+
+            <!-- Tarjeta dinámica que cambia según el salón seleccionado -->
+            <div id="spaceDynamicCard" class="space-dynamic-card"></div>
+
+            <!-- AVISO EN VIVO 1: Problema en Instalación / Riesgo de Seguridad al elegir el lugar -->
+            <div id="liveSecurityWarning" class="live-alert security-alert" style="display: none;"></div>
 
             <div class="row-2">
               <div class="field">
                 <label for="bookingRequester">Responsable</label>
-                <input type="text" id="bookingRequester" placeholder="Nombre" required />
+                <input type="text" id="bookingRequester" placeholder="Ej: Trainer Carlos Rueda" required />
               </div>
               <div class="field">
-                <label for="bookingRole">Rol</label>
-                <select id="bookingRole">
+                <label for="bookingRole">Rol Autorizado</label>
+                <select id="bookingRole" required>
                   <option value="TRAINER">Trainer</option>
-                  <option value="TEAM_EDUCACION">Staff</option>
-                  <option value="CAMPER">Camper</option>
+                  <option value="TEAM_EDUCACION">Team Educación / Staff</option>
+                  <option value="COORDINACION">Coordinación Académica</option>
                 </select>
               </div>
             </div>
 
             <div class="row-2">
               <div class="field">
-                <label for="bookingAttendees">Asistentes</label>
-                <input type="number" id="bookingAttendees" min="1" max="150" value="25" required />
+                <label for="bookingAttendees">
+                  Cantidad de Personas <span id="attendeesMaxLabel" class="label-hint">(Máx: 35)</span>
+                </label>
+                <input
+                  type="number"
+                  id="bookingAttendees"
+                  min="1"
+                  max="200"
+                  value="25"
+                  oninput="onSpaceOrAttendeesChange()"
+                  required
+                />
               </div>
               <div class="field">
                 <label for="bookingDate">Fecha</label>
-                <input type="date" id="bookingDate" value="2026-10-16" required />
+                <input type="date" id="bookingDate" value="2026-10-16" onchange="onSpaceOrAttendeesChange()" required />
               </div>
             </div>
 
+            <!-- AVISO EN VIVO 2: Exceso de Personal según la capacidad del salón elegido -->
+            <div id="liveCapacityWarning" class="live-alert capacity-alert" style="display: none;"></div>
+
             <div class="field">
-              <label for="bookingActivity">Actividad</label>
-              <input type="text" id="bookingActivity" placeholder="Ej: Sesión Backend Node.js" required />
+              <label for="bookingActivity">Actividad o Motivo de Uso</label>
+              <input
+                type="text"
+                id="bookingActivity"
+                placeholder="Ej: Sesión de Arquitectura de Software"
+                oninput="onSpaceOrAttendeesChange()"
+                required
+              />
             </div>
 
             <div class="blocks-row">
@@ -219,17 +240,17 @@
 
             <div class="row-2">
               <div class="field">
-                <label for="bookingStart">Inicio</label>
+                <label for="bookingStart">Hora Inicio</label>
                 <input type="time" id="bookingStart" value="10:00" required />
               </div>
               <div class="field">
-                <label for="bookingEnd">Fin</label>
+                <label for="bookingEnd">Hora Fin</label>
                 <input type="time" id="bookingEnd" value="12:00" required />
               </div>
             </div>
 
             <button type="submit" id="btnSubmitBooking" class="btn-primary">
-              Confirmar Reserva Segura
+              Confirmar Reserva
             </button>
           </form>
 
@@ -245,7 +266,7 @@
       <section class="panel">
         <div class="panel-head">
           <h2>Calendario Visual de Ocupación (06:00 – 22:00)</h2>
-          <span class="subtle-text">Haz clic en un bloque libre para reservarlo</span>
+          <span class="subtle-text">Haz clic en cualquier bloque libre para reservar ese salón</span>
         </div>
         <div class="calendar-scroll">
           <div id="calendarMatrix" class="calendar-matrix"></div>
@@ -257,46 +278,42 @@
     <!-- VISTA 3: BASE DE DATOS EN VIVO & ANALÍTICA DE RESERVAS               -->
     <!-- ==================================================================== -->
     <main id="view-database" class="view-pane">
-      <!-- Tarjetas de Analítica Visual -->
       <div class="analytics-grid">
         <section class="panel">
           <div class="panel-head">
-            <h2>Ocupación y Demanda por Salón</h2>
-            <span class="tag-mono">Tiempo Real</span>
+            <h2>Capacidad y Ocupación por Salón</h2>
+            <span class="tag-mono">Sincronizado</span>
           </div>
           <div id="spaceAnalyticsBars" class="analytics-bars"></div>
         </section>
 
         <section class="panel">
           <div class="panel-head">
-            <h2>Balance de Seguridad &amp; Auditoría</h2>
-            <span class="tag-mono">Zero-Trust</span>
+            <h2>Métricas de Base de Datos &amp; Seguridad</h2>
+            <span class="tag-mono">Tiempo Real</span>
           </div>
           <div id="securityStatsSummary" class="security-stats-grid"></div>
         </section>
       </div>
 
-      <!-- Tabla de Base de Datos Sincronizada -->
       <section class="panel">
         <div class="panel-head">
-          <div>
-            <h2>Base de Datos de Reservas &amp; Auditoría</h2>
-          </div>
+          <h2>Base de Datos de Reservas</h2>
           <div class="db-controls">
             <input
               type="search"
               id="dbSearchInput"
               class="filter-input"
-              placeholder="🔍 Filtrar registro en BD..."
+              placeholder="🔍 Buscar en base de datos..."
               oninput="renderDatabaseView()"
             />
             <select id="dbStatusFilter" class="filter-input" onchange="renderDatabaseView()">
-              <option value="ALL">Todos los registros</option>
-              <option value="ACTIVA">🟢 Activas</option>
-              <option value="BLOQUEADA_SEGURIDAD">🔴 Bloqueadas por Seguridad</option>
-              <option value="CANCELADA">⚪ Canceladas</option>
+              <option value="ALL">Todos los estados</option>
+              <option value="ACTIVA">✅ Válida / Activa</option>
+              <option value="BLOQUEADA_SEGURIDAD">🔴 Bloqueada por Seguridad</option>
+              <option value="CANCELADA">⚪ Liberada</option>
             </select>
-            <button class="btn-icon-text" onclick="exportReportCSV()">📥 Exportar BD (CSV)</button>
+            <button class="btn-icon-text" onclick="exportReportCSV()">📥 Exportar CSV</button>
           </div>
         </div>
 
@@ -309,10 +326,10 @@
                 <th>RESPONSABLE</th>
                 <th>ACTIVIDAD</th>
                 <th>HORARIO</th>
-                <th>AFORO</th>
+                <th>PERSONAS</th>
                 <th>RIESGO</th>
                 <th>ESTADO</th>
-                <th>DICTAMEN SEGURIDAD</th>
+                <th>OBSERVACIÓN DE SEGURIDAD</th>
                 <th>ACCIÓN</th>
               </tr>
             </thead>
@@ -323,13 +340,13 @@
     </main>
 
     <!-- ==================================================================== -->
-    <!-- VISTA 4: CENTRO DE SEGURIDAD DE ESPACIOS                             -->
+    <!-- VISTA 4: SEGURIDAD DE INSTALACIONES                                  -->
     <!-- ==================================================================== -->
     <main id="view-security" class="view-pane">
       <div class="security-workspace">
         <section class="panel">
           <div class="panel-head">
-            <h2>Alertas de Seguridad en Salones</h2>
+            <h2>Problemas de Instalación y Alertas Activas</h2>
             <div class="legend-inline">
               <span><i class="dot red"></i> Crítica</span>
               <span><i class="dot amber"></i> Media</span>
@@ -341,34 +358,25 @@
 
         <section class="panel">
           <div class="panel-head">
-            <h2>Reportar Alerta en Salón</h2>
-            <span class="tag-shield">Bloqueo Preventivo</span>
-          </div>
-
-          <div class="quick-demos">
-            <button type="button" class="demo-chip danger" onclick="fillIncidentDemo('CRITICAL')">
-              🔴 Alerta Eléctrica Crítica
-            </button>
-            <button type="button" class="demo-chip ok" onclick="fillIncidentDemo('LOW')">
-              🟢 Mantenimiento Menor
-            </button>
+            <h2>Reportar Problema en Instalación</h2>
+            <span class="tag-shield">Alerta Automática</span>
           </div>
 
           <form id="incidentForm" class="clean-form" onsubmit="submitIncident(event)">
             <div class="field">
-              <label for="incidentTargetId">Salón Afectado</label>
+              <label for="incidentTargetId">Salón con Novedad</label>
               <select id="incidentTargetId" required></select>
             </div>
             <div class="field">
-              <label for="incidentTitle">Motivo de la Alerta</label>
-              <input type="text" id="incidentTitle" placeholder="Ej: Cortocircuito en toma eléctrica" required />
+              <label for="incidentTitle">Problema Detectado</label>
+              <input type="text" id="incidentTitle" placeholder="Ej: Falla eléctrica o aire acondicionado dañado" required />
             </div>
             <div class="field">
-              <label for="incidentDesc">Detalle</label>
-              <textarea id="incidentDesc" rows="3" placeholder="Descripción breve del riesgo..." required></textarea>
+              <label for="incidentDesc">Descripción del Riesgo</label>
+              <textarea id="incidentDesc" rows="3" placeholder="Describe el problema de la instalación..." required></textarea>
             </div>
             <button type="submit" id="btnSubmitIncident" class="btn-primary danger">
-              Activar Protocolo de Seguridad
+              Registrar Alerta en Salón
             </button>
           </form>
         </section>
@@ -376,7 +384,7 @@
     </main>
   </div>
 
-  <!-- ASISTENTE CONVERSACIONAL FLOTANTE (MINIMALISTA) -->
+  <!-- ASISTENTE CONVERSACIONAL FLOTANTE -->
   <aside id="chatDrawer" class="chat-drawer" aria-label="Asistente Operativo">
     <div class="chat-head">
       <div class="chat-head-title">
@@ -393,14 +401,14 @@
       <button type="button" onclick="askQuick('¿Qué aulas están libres a las 3 de la tarde?')">
         ¿Aulas libres a las 3?
       </button>
-      <button type="button" onclick="askQuick('¿Qué salones están bloqueados por seguridad?')">
-        ¿Salones bloqueados?
+      <button type="button" onclick="askQuick('¿Qué salones tienen problemas de instalación o bloqueo?')">
+        ¿Salones con problemas?
       </button>
     </div>
 
     <div id="chatMessages" class="chat-messages">
       <div class="bubble bot">
-        Hola. Pregúntame qué salones están disponibles en cualquier horario o el estado de seguridad del campus.
+        Hola. Pregúntame qué salones están libres o si algún espacio presenta problemas de instalación.
       </div>
     </div>
 

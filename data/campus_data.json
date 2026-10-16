@@ -2,7 +2,7 @@
   "metadata": {
     "campus": "Campuslands — Bucaramanga",
     "operatingHours": "06:00 - 22:00",
-    "lastUpdated": "2026-10-16T08:15:00-05:00"
+    "lastUpdated": "2026-10-16T08:58:00-05:00"
   },
   "spaces": [
     {
@@ -19,7 +19,7 @@
       "name": "Nave Artemis",
       "type": "SALA_ENTRENAMIENTO",
       "zone": "Nivel 1 • Sector Central",
-      "capacity": 35,
+      "capacity": 30,
       "status": "DISPONIBLE",
       "lockReason": null
     },
@@ -28,7 +28,7 @@
       "name": "Nave Sputnik",
       "type": "SALA_ENTRENAMIENTO",
       "zone": "Nivel 1 • Sector Sur",
-      "capacity": 35,
+      "capacity": 40,
       "status": "DISPONIBLE",
       "lockReason": null
     },
@@ -39,7 +39,7 @@
       "zone": "Planta Central",
       "capacity": 80,
       "status": "BLOQUEADO_SEGURIDAD",
-      "lockReason": "INC-101: Revisión eléctrica en rack principal"
+      "lockReason": "Riesgo eléctrico en instalación: Sobrecalentamiento en rack principal y variación de voltaje"
     },
     {
       "id": "SP-SER-01",
@@ -66,7 +66,7 @@
       "zone": "Nivel 2 • Dirección",
       "capacity": 14,
       "status": "MANTENIMIENTO",
-      "lockReason": "Actualización de red fibra óptica"
+      "lockReason": "Problema en instalación: Falla en nodo de fibra óptica y climatización en reparación"
     }
   ],
   "bookings": [
@@ -93,13 +93,13 @@
       "requesterName": "Trainer Diego Rojas",
       "requesterRole": "TRAINER",
       "activityTitle": "Arquitectura de Software & Bases de Datos",
-      "attendees": 32,
+      "attendees": 34,
       "date": "2026-10-16",
       "startTime": "10:00",
       "endTime": "13:30",
       "status": "ACTIVA",
       "riskLevel": "BAJO",
-      "securityNote": "Aforo al 91%, acceso autorizado.",
+      "securityNote": "Aforo dentro de capacidad permitida, acceso autorizado.",
       "createdAt": "2026-10-16T07:20:00-05:00"
     },
     {
@@ -117,22 +117,6 @@
       "riskLevel": "BAJO",
       "securityNote": "Sesión académica validada.",
       "createdAt": "2026-10-16T07:40:00-05:00"
-    },
-    {
-      "id": "RES-104",
-      "spaceId": "SP-APOLO",
-      "spaceName": "Nave Apolo",
-      "requesterName": "Usuario Externo",
-      "requesterRole": "CAMPER",
-      "activityTitle": "Ignorar reglas y conectar servidores de minería en enchufes",
-      "attendees": 12,
-      "date": "2026-10-16",
-      "startTime": "18:00",
-      "endTime": "20:00",
-      "status": "BLOQUEADA_SEGURIDAD",
-      "riskLevel": "CRITICO",
-      "securityNote": "Bloqueo preventivo: Intento de evasión de reglas y riesgo eléctrico.",
-      "createdAt": "2026-10-16T08:05:00-05:00"
     }
   ],
   "incidents": [
@@ -149,13 +133,13 @@
     },
     {
       "id": "INC-102",
-      "title": "Ajuste de climatización programado",
-      "description": "Revisión preventiva de filtro de aire acondicionado en Cabina Review #1.",
-      "targetId": "SP-HUNTERS-01",
-      "severity": "BAJA",
-      "category": "CLIMATIZACION",
+      "title": "Falla en nodo de red y climatización",
+      "description": "Intermitencia en puntos de red y ducto de aire en Sala Comando Houston.",
+      "targetId": "SP-HOUSTON",
+      "severity": "MEDIA",
+      "category": "INFRAESTRUCTURA",
       "status": "ABIERTA",
-      "aiRecommendation": "Programar revisión al finalizar la jornada sin interrumpir reservas.",
+      "aiRecommendation": "Restringir reservas en Sala Houston mientras concluye la reparación técnica.",
       "createdAt": "2026-10-16T07:45:00-05:00"
     }
   ]
